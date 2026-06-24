@@ -181,7 +181,9 @@ else
     info "kept  $cu/${stub}.lua"
 fi
     ok "stub  $f"
-        else info "kept  $cu/${stub}.lua"; fi
+else 
+    info "kept  $cu/${stub}.lua"; 
+fi
     done
 }
 
