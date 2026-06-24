@@ -17,7 +17,7 @@ accent      #cccccc
 | **Hyprlock** | Lock screen layout — clock, date, user, status bar |
 | **Hypridle** | Idle timeouts: lock at 5 min, display off at 10, suspend at 15 |
 | **Hyprpaper** | Wallpaper daemon |
-| **Waybar** | Status bar with colours |
+| **Hydebar** | Status bar — fast Rust bar with HyprMono colours |
 | **Wofi** | Primary app launcher |
 | **Rofi** | Alternative launcher (`drun`, `run`, `window` modes) |
 | **Kitty** | Terminal — JetBrains Mono, matching colour scheme, split keybinds |
@@ -37,7 +37,9 @@ These must be installed before running the installer.
 # Arch / Arch-based (EndeavourOS, Manjaro, CachyOS…)
 sudo pacman -S --needed \
     hyprland hyprpaper hypridle hyprlock \
-    waybar kitty wofi
+    kitty wofi
+# Install hydebar separately:
+paru -S hydebar
 ```
 
 > The installer will detect missing packages and offer to install them via `pacman` if it is available.
@@ -83,7 +85,7 @@ Log out and back in to start Hyprland, or if already running:
 
 ```bash
 hyprctl reload
-killall -SIGUSR2 waybar
+pkill hydebar; hydebar &
 ```
 
 ---
@@ -133,10 +135,8 @@ Hypr.dots/
     │       ├── keybinds.lua
     │       ├── rules.lua
     │       └── variables.lua
-    ├── waybar/
-    │   ├── config.jsonc
-    │   ├── style.css
-    │   └── colours/colours.css
+    ├── hydebar/
+    │   └── config.toml           ← bar config with HyprMono palette
     ├── wofi/
     │   ├── config
     │   ├── style.css
@@ -256,11 +256,11 @@ bash install.sh
 **Hyprland doesn't start**  
 Check `journalctl --user -xe` or `cat /tmp/hyprland*.log` for errors.
 
-**Waybar is blank or missing**  
+**Hydebar not showing**  
 ```bash
-killall waybar; waybar &
+pkill hydebar; hydebar &
 # check for errors:
-waybar 2>&1 | head -40
+RUST_LOG=debug hydebar
 ```
 
 **Wallpaper not showing**  

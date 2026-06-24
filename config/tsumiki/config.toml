@@ -1,0 +1,55 @@
+# HyprMono — hydebar configuration
+# Dark monochrome theme matching the Hyprland colour scheme
+#
+# Install hydebar: paru -S hydebar  (Arch)
+# or build from source: cargo build --release
+# Binary: hydebar
+
+# ── Appearance ────────────────────────────────────────────────────────
+[appearance]
+style   = "Islands"
+opacity = 0.95
+
+# HyprMono palette
+background_color  = "#111111"
+primary_color     = "#cccccc"
+secondary_color   = "#222222"
+success_color     = "#aaaaaa"
+danger_color      = "#888888"
+text_color        = "#e5e5e5"
+
+[appearance.animations]
+enabled              = true
+menu_fade_duration_ms = 180
+hover_duration_ms    = 80
+
+# ── Modules layout ───────────────────────────────────────────────────
+[modules]
+left   = ["Workspaces"]
+center = ["WindowTitle"]
+right  = [
+    "SystemInfo",
+    ["Privacy", "Notifications", "Screenshot"],
+    "MediaPlayer",
+    ["Clock", "Battery", "Settings"],
+]
+
+# ── System indicators ─────────────────────────────────────────────────
+[system]
+indicators = ["Cpu", "Memory", "Temperature", "DownloadSpeed"]
+
+[system.cpu]
+warn_threshold  = 60
+alert_threshold = 80
+
+# ── Clock ─────────────────────────────────────────────────────────────
+[clock]
+format = "%a %d %b  %H:%M"
+
+# ── Power / session ───────────────────────────────────────────────────
+[settings]
+lock_cmd    = "hyprlock &"
+suspend_cmd = "systemctl suspend"
+reboot_cmd  = "systemctl reboot"
+shutdown_cmd = "shutdown now"
+logout_cmd  = "loginctl kill-user $(whoami)"

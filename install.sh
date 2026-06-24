@@ -8,7 +8,7 @@
 #    config/hypr/hyprpaper/         ← wallpaper + conf
 #    config/hypr/lib/               ← lua helpers
 #    config/hypr/services/          ← service bootstrap
-#    config/waybar/                 ← bar
+#    config/tsumiki/                ← bar (Tsumiki — cloned to ~/.config/tsumiki)
 #    config/wofi/                   ← launcher
 #    config/rofi/                   ← launcher (alt)
 #    config/kitty/                  ← terminal
@@ -86,13 +86,13 @@ clear; echo -e "${FG}"
 ctr "${BOLD}${HI}╔══════════════════════════════════════╗"
 ctr "${BOLD}${HI}║          H Y P R   M O N O           ║"
 ctr "${BOLD}${HI}║     dark monochrome · hyprland       ║"
-ctr "${BOLD}${HI}╚══════════════════════════════════════╝ ${R}"; echo
+ctr "${BOLD}${HI}   ╚══════════════════════════════════════╝ ${R}"; echo
 $DRY && { ctr "${YEL}${BOLD}⚡  DRY-RUN — nothing will be written  ⚡${R}"; echo; }
 hr
 
 # ── dependency check ──────────────────────────────────────────────────
 title "Checking dependencies"
-REQUIRED=(hyprland hyprpaper hypridle hyprlock waybar kitty wofi)
+REQUIRED=(hyprland hyprpaper hypridle hyprlock kitty wofi)
 OPTIONAL=(rofi fuzzel nm-applet playerctl brightnessctl wpctl fc-cache)
 MISSING=()
 
@@ -121,7 +121,7 @@ declare -a MENU=(
     "hyprland"   "Core config — binds, rules, animations, env…"
     "hyprlock"   "Lock screen + idle daemon"
     "hyprpaper"  "Wallpaper daemon config + default wallpaper"
-    "waybar"     "Status bar"
+    "tsumiki"    "Status bar — Tsumiki (Python/Fabric, cloned from GitHub)"
     "wofi"       "App launcher (wofi)"
     "rofi"       "App launcher (rofi)"
     "kitty"      "Terminal emulator"
@@ -198,12 +198,105 @@ do_hyprpaper() {
     safe_copy_once "$S/hypr/hyprpaper/wallpaper.jpg" "$C/hypr/hyprpaper/wallpaper.jpg"
 }
 
-do_waybar() {
-    title "Waybar"
-    safe_link "$S/waybar/config.jsonc"        "$C/waybar/config.jsonc"
-    safe_link "$S/waybar/style.css"           "$C/waybar/style.css"
-    safe_link "$S/waybar/colours/colours.css" "$C/waybar/colours/colours.css"
+do_tsumiki() {
+    title "Tsumiki bar"
+
+    local TSUMIKI_DIR="$HOME/.config/tsumiki"
+
+    # ── 1. Clone or update repo ────────────────────────────────────
+    if [[ -d "$TSUMIKI_DIR/.git" ]]; then
+        info "Tsumiki already cloned — pulling latest…"
+        if $DRY; then dryp "git -C $TSUMIKI_DIR pull --ff-only"; else
+            git -C "$TSUMIKI_DIR" pull --ff-only && ok "Tsumiki updated"
+        fi
+    else
+        info "Cloning Tsumiki into $TSUMIKI_DIR…"
+        if $DRY; then dryp "git clone https://github.com/rubiin/Tsumiki.git $TSUMIKI_DIR"; else
+            git clone --depth 1 https://github.com/rubiin/Tsumiki.git "$TSUMIKI_DIR" \
+                && ok "Tsumiki cloned"
+        fi
+    fi
+
+    # ── 2. System packages ─────────────────────────────────────────
+    if cmd_ok pacman; then
+        local PACMAN_DEPS=(
+            pipewire playerctl dart-sass power-profiles-daemon networkmanager
+            brightnessctl pkgconf wf-recorder kitty python pacman-contrib
+            gtk3 cairo gtk-layer-shell libgirepository noto-fonts-emoji
+            gobject-introspection gobject-introspection-runtime python-pip
+            libnotify cliphist satty nvtop
+        )
+        local MISSING_PKG=()
+        for p in "${PACMAN_DEPS[@]}"; do
+            pacman -Q "$p" &>/dev/null || MISSING_PKG+=("$p")
+        done
+        if [[ ${#MISSING_PKG[@]} -gt 0 ]]; then
+            warn "Missing pacman packages: ${MISSING_PKG[*]}"
+            if ask "Install them via pacman?" y; then
+                $DRY || sudo pacman -S --needed "${MISSING_PKG[@]}"
+            fi
+        else
+            ok "Pacman dependencies satisfied"
+        fi
+
+        # AUR packages
+        local AUR_HELPER=""
+        cmd_ok paru && AUR_HELPER="paru"
+        cmd_ok yay  && AUR_HELPER="${AUR_HELPER:-yay}"
+        if [[ -n "$AUR_HELPER" ]]; then
+            local AUR_DEPS=(
+                gnome-bluetooth-3.0 slurp imagemagick tesseract tesseract-data-eng
+                ttf-jetbrains-mono-nerd grimblast-git glace-git matugen-bin
+            )
+            local MISSING_AUR=()
+            for p in "${AUR_DEPS[@]}"; do
+                pacman -Q "$p" &>/dev/null || MISSING_AUR+=("$p")
+            done
+            if [[ ${#MISSING_AUR[@]} -gt 0 ]]; then
+                warn "Missing AUR packages: ${MISSING_AUR[*]}"
+                if ask "Install them via $AUR_HELPER?" y; then
+                    $DRY || $AUR_HELPER -S --needed "${MISSING_AUR[@]}"
+                fi
+            else
+                ok "AUR dependencies satisfied"
+            fi
+        else
+            warn "No AUR helper found — install manually: gnome-bluetooth-3.0 slurp imagemagick tesseract ttf-jetbrains-mono-nerd grimblast-git glace-git matugen-bin"
+        fi
+    else
+        warn "Non-Arch system — install Tsumiki dependencies manually (see its README)"
+    fi
+
+    # ── 3. Python venv + pip deps ──────────────────────────────────
+    if $DRY; then
+        dryp "cd $TSUMIKI_DIR && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
+    else
+        if [[ ! -d "$TSUMIKI_DIR/.venv" ]]; then
+            info "Creating Python virtual environment…"
+            python3 -m venv "$TSUMIKI_DIR/.venv" || { err "venv creation failed"; return 1; }
+        fi
+        info "Installing Python dependencies…"
+        "$TSUMIKI_DIR/.venv/bin/pip" install -r "$TSUMIKI_DIR/requirements.txt" --quiet \
+            && ok "Python dependencies installed"
+    fi
+
+    # ── 4. Default config files (copy from example/ if absent) ────
+    for cfg in config.toml theme.toml; do
+        local dst="$TSUMIKI_DIR/$cfg"
+        local src_ex="$TSUMIKI_DIR/example/$cfg"
+        if [[ ! -f "$dst" ]]; then
+            $DRY && { dryp "cp $src_ex $dst"; continue; }
+            [[ -f "$src_ex" ]] && cp "$src_ex" "$dst" && ok "Created default $cfg"
+        else
+            info "Kept existing $cfg"
+        fi
+    done
+
+    ok "Tsumiki installed — starts automatically via autostart.lua"
+    info "To start manually: ~/.config/tsumiki/init.sh -start"
+    info "To update later:   git -C ~/.config/tsumiki pull"
 }
+
 
 do_wofi() {
     title "Wofi"
@@ -265,7 +358,7 @@ for c in "${QUEUE[@]}"; do
         hyprland)  do_hyprland  ;;
         hyprlock)  do_hyprlock  ;;
         hyprpaper) do_hyprpaper ;;
-        waybar)    do_waybar    ;;
+        tsumiki)   do_tsumiki   ;;
         wofi)      do_wofi      ;;
         rofi)      do_rofi      ;;
         kitty)     do_kitty     ;;
@@ -287,6 +380,6 @@ ctr "${BOLD}${GRN}✦  Done  ✦${R}"; echo
 echo -e "  ${ACC}→${R}  Log out and back into Hyprland to apply"
 echo -e "  ${ACC}→${R}  Personal overrides:  ${BOLD}~/.config/hypr/custom/*.lua${R}"
 echo -e "  ${ACC}→${R}  Wallpaper:           ${BOLD}~/.config/hypr/hyprpaper/wallpaper.jpg${R}"
-echo -e "  ${ACC}→${R}  Reload waybar:       ${BOLD}killall -SIGUSR2 waybar${R}"
+echo -e "  ${ACC}→${R}  Restart Tsumiki:     ${BOLD}pkill tsumiki; ~/.config/tsumiki/init.sh -start${R}"
 echo -e "  ${ACC}→${R}  Existing files saved as  ${BOLD}*.bak.<timestamp>${R}"
 echo
