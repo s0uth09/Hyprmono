@@ -167,18 +167,17 @@ do_hyprland() {
     safe_link "$S/hypr/services/custom_config.lua" "$C/hypr/services/custom_config.lua"
     # User custom stubs — created once, never overwritten
     local cu="$C/hypr/custom"
-    for stub in env execs keybinds rules variables; do
+    for stub in env execs general keybinds rules variables; do
         local f="$cu/${stub}.lua"
 if [[ ! -f "$f" ]]; then
    $DRY || {
        mkdir -p "$cu"
-       echo "# ${stub}.lua - personal overrides (never overwritten)" > "$f"
+       echo "-- ${stub}.lua - personal overrides (never overwritten)" > "$f"
    }
    ok "stub  $f"
 else
     info "kept  $cu/${stub}.lua"
 fi
-    ok "stub  $f"
 done 
 }
 do_hyprlock() {
