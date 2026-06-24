@@ -88,7 +88,7 @@ clear; echo -e "${FG}"
 ctr "${BOLD}${HI}╔══════════════════════════════════════╗"
 ctr "${BOLD}${HI}║          H Y P R   M O N O           ║"
 ctr "${BOLD}${HI}║     dark monochrome · hyprland       ║"
-ctr "${BOLD}${HI}╚══════════════════════════════════════╝${R}"; echo
+ctr "${BOLD}${HI} ╚══════════════════════════════════════╝${R}"; echo
 $DRY && { ctr "${YEL}${BOLD}⚡  DRY-RUN — nothing will be written  ⚡${R}"; echo; }
 hr
 
