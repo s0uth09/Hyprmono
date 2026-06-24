@@ -293,5 +293,3 @@ echo -e "  ${ACC}→${R}  Wallpaper:           ${BOLD}~/.config/hypr/hyprpaper/w
 echo -e "  ${ACC}→${R}  Reload waybar:       ${BOLD}killall -SIGUSR2 waybar${R}"
 echo -e "  ${ACC}→${R}  Existing files saved as  ${BOLD}*.bak.<timestamp>${R}"
 echo
-$DRY && echo -e "  ${YEL}⚡ Re-run without --dry-run to write for real${R}\n"
-hr; echo
