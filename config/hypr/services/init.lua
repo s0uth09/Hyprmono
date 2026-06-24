@@ -1,1 +1,1 @@
-require("hypr.services.custom_config")
+require("services.custom_config")
