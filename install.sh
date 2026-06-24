@@ -182,7 +182,7 @@ else
 fi
     ok "stub  $f"
 done 
-
+}
 do_hyprlock() {
     title "Hyprlock + Hypridle"
     for f in "$S/hypr/hyprlock/"*; do
