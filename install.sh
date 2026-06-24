@@ -171,10 +171,16 @@ do_hyprland() {
     local cu="$C/hypr/custom"
     for stub in env execs keybinds rules variables; do
         local f="$cu/${stub}.lua"
-        if [[ ! -f "$f" ]]; then
-            $DRY || { mkdir -p "$cu"
-                printf -- '-- %s.lua - personal overrides (never overwritten)\n' "$stub" > "$f"
-            ok "stub  $f"
+if [[ ! -f "$f" ]]; then
+   $DRY || {
+       mkdir -p "$cu"
+       echo "# ${stub}.lua - personal overrides (never overwritten)" > "$f"
+   }
+   ok "stub  $f"
+else
+    info "kept  $cu/${stub}.lua"
+fi
+    ok "stub  $f"
         else info "kept  $cu/${stub}.lua"; fi
     done
 }
