@@ -64,8 +64,8 @@ sudo pacman -S --needed \
 ### 1 — Clone or extract
 
 ```bash
-git clone https://github.com/you/Hypr.dots.git ~/.local/share/Hypr.dots
-cd ~/.local/share/Hypr.dots
+git clone https://github.com/you/Hyprmono.git ~/.local/share/Hyprmono
+cd ~/.local/share/Hyprmono
 ```
 
 ### 2 — Preview (optional)
