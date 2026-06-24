@@ -181,7 +181,7 @@ else
     info "kept  $cu/${stub}.lua"
 fi
     ok "stub  $f"
-}
+
 
 do_hyprlock() {
     title "Hyprlock + Hypridle"
