@@ -1,0 +1,140 @@
+/* ── Rofi ── Hypr.dots dark monochrome theme ── */
+
+configuration {
+    modi:                "drun,run,window";
+    show-icons:          true;
+    icon-theme:          "Papirus-Dark";
+    display-drun:        " Apps";
+    display-run:         " Run";
+    display-window:      " Windows";
+    drun-display-format: "{name}";
+    font:                "JetBrainsMono NF 12";
+    terminal:            "kitty";
+    case-sensitive:      false;
+    cycle:               true;
+    normalize-match:     true;
+    steal-focus:         false;
+}
+
+/* ── Palette (mirrors colours.lua) ── */
+* {
+    bg:        #111111;
+    bg-alt:    #222222;
+    bg-high:   #2d2d2dff;
+    fg:        #e5e5e5;
+    fg-dim:    #cccccc;
+    border-c:  #444444;
+    accent:    #cccccc;
+    accent-fg: #111111;
+
+    background-color: transparent;
+    text-color:       @fg;
+}
+
+window {
+    location:         center;
+    anchor:           center;
+    width:            520px;
+    border:           1px solid;
+    border-color:     @border-c;
+    border-radius:    18px;
+    background-color: @bg;
+}
+
+mainbox {
+    background-color: transparent;
+    children:         [ inputbar, listview ];
+    spacing:          0;
+    padding:          8px;
+}
+
+inputbar {
+    background-color: @bg-alt;
+    border:           1px solid;
+    border-color:     @border-c;
+    border-radius:    10px;
+    padding:          8px 12px;
+    margin:           0 0 6px 0;
+    children:         [ prompt, entry ];
+    spacing:          6px;
+}
+
+prompt {
+    background-color: transparent;
+    text-color:       @fg-dim;
+    padding:          2px 0;
+}
+
+entry {
+    background-color: transparent;
+    text-color:       @fg;
+    placeholder:      "Search…";
+    placeholder-color: @border-c;
+    cursor:           text;
+}
+
+listview {
+    background-color: transparent;
+    lines:            10;
+    columns:          1;
+    scrollbar:        false;
+    spacing:          2px;
+    fixed-height:     false;
+}
+
+element {
+    background-color: transparent;
+    border-radius:    8px;
+    padding:          6px 8px;
+    spacing:          8px;
+    children:         [ element-icon, element-text ];
+}
+
+element selected {
+    background-color: @accent;
+}
+
+element-icon {
+    background-color: transparent;
+    size:             24px;
+}
+
+element-text {
+    background-color: transparent;
+    text-color:       inherit;
+    vertical-align:   0.5;
+}
+
+element selected > element-text {
+    text-color: @accent-fg;
+}
+
+mode-switcher {
+    background-color: transparent;
+    border:           1px solid;
+    border-color:     @border-c;
+    border-radius:    8px;
+    margin:           6px 0 0 0;
+    padding:          4px;
+    spacing:          4px;
+}
+
+button {
+    background-color: transparent;
+    text-color:       @fg-dim;
+    border-radius:    6px;
+    padding:          4px 10px;
+}
+
+button selected {
+    background-color: @bg-high;
+    text-color:       @fg;
+}
+
+scrollbar {
+    background-color: @bg-alt;
+    handle-color:     @border-c;
+    handle-width:     4px;
+    border-radius:    4px;
+    width:            6px;
+}
