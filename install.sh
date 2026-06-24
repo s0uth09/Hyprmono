@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # ══════════════════════════════════════════════════════════════════════
-#  Hypr.dots  ·  installer
-#  Usage:  bash install.sh [--dry-run]
 #
 #  Repo layout (mirrors ~/.config exactly):
 #    config/hypr/hyprland.lua       ← entry point
@@ -88,7 +86,7 @@ clear; echo -e "${FG}"
 ctr "${BOLD}${HI}╔══════════════════════════════════════╗"
 ctr "${BOLD}${HI}║          H Y P R   M O N O           ║"
 ctr "${BOLD}${HI}║     dark monochrome · hyprland       ║"
-ctr "${BOLD}${HI} ╚══════════════════════════════════════╝${R}"; echo
+ctr "${BOLD}${HI}╚══════════════════════════════════════╝ ${R}"; echo
 $DRY && { ctr "${YEL}${BOLD}⚡  DRY-RUN — nothing will be written  ⚡${R}"; echo; }
 hr
 

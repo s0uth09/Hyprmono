@@ -1,7 +1,3 @@
--- binds.lua
--- terminal/fileManager/browser are set as Lua globals in variables.lua
--- which is required before this file in hyprland.lua
-
 local menu    = "wofi --show drun"
 local mainMod = "SUPER"
 
