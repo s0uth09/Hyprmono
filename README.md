@@ -61,24 +61,10 @@ sudo pacman -S --needed \
 
 ## Installation
 
-### 1 — Clone or extract
 
 ```bash
 git clone https://github.com/s0uth09/Hyprmono.git ~/.local/share/Hyprmono
 cd ~/.local/share/Hyprmono
-```
-
-### 2 — Preview (optional)
-
-Run with `--dry-run` to see every action without touching anything:
-
-```bash
-bash install.sh --dry-run
-```
-
-### 3 — Install
-
-```bash
 bash install.sh
 ```
 
