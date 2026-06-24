@@ -173,7 +173,7 @@ do_hyprland() {
         local f="$cu/${stub}.lua"
         if [[ ! -f "$f" ]]; then
             $DRY || { mkdir -p "$cu"
-                printf '-- %s.lua — personal overrides (never overwritten)\n' "$stub" > "$f"; }
+                printf -- '-- %s.lua - personal overrides (never overwritten)\n' "$stub" > "$f"
             ok "stub  $f"
         else info "kept  $cu/${stub}.lua"; fi
     done
