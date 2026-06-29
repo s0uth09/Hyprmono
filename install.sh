@@ -285,6 +285,7 @@ PACMAN_PACKAGES=(
 
     kitty
     wofi
+    rofi
     fuzzel
 
     pipewire
