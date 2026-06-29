@@ -1,284 +1,992 @@
 #!/usr/bin/env bash
-set -euo pipefail
+
+
+set -Eeuo pipefail
+
+readonly SCRIPT_VERSION="2.0"
+readonly PROJECT="HyprMono"
+
 DOTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DRY=false; [[ "${1:-}" == "--dry-run" ]] && DRY=true
+CONFIG_DIR="$HOME/.config"
+LOCAL_BIN="$HOME/.local/bin"
+LOGFILE="$DOTS/install.log"
 
-# ── colours ──────────────────────────────────────────────────────────
-R='\e[0m'; BOLD='\e[1m'; DIM='\e[2m'
-FG='\e[38;5;253m'; ACC='\e[38;5;251m'; HI='\e[38;5;255m'
-DFG='\e[38;5;241m'
-GRN='\e[38;5;114m'; YEL='\e[38;5;222m'
-RED='\e[38;5;203m'; CYN='\e[38;5;116m'
+DRY_RUN=false
 
-W=$(tput cols 2>/dev/null || echo 72)
-hr()    { printf "${DFG}"; printf '─%.0s' $(seq 1 "$W"); printf "${R}\n"; }
-ctr() {
-    local s="$*"
-    local len=${#s}
-    local p=0
+[[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true
 
-    if (( len < W )); then
-        p=$(( (W - len) / 2 ))
-    fi
+###############################################################################
+# Colours
+###############################################################################
 
-    printf "%*s%b\n" "$p" "" "$s"
+RESET="\e[0m"
+
+BLACK="\e[30m"
+WHITE="\e[97m"
+
+GRAY="\e[38;5;245m"
+LIGHT="\e[38;5;255m"
+
+RED="\e[38;5;203m"
+GREEN="\e[38;5;114m"
+YELLOW="\e[38;5;222m"
+CYAN="\e[38;5;117m"
+
+BOLD="\e[1m"
+DIM="\e[2m"
+
+WIDTH=$(tput cols 2>/dev/null || echo 80)
+
+###############################################################################
+# Logging
+###############################################################################
+
+log() {
+
+    printf "[%s] %s\n" \
+        "$(date '+%H:%M:%S')" \
+        "$*" >> "$LOGFILE"
+
 }
-ok()    { echo -e "  ${GRN}✓${R}  $*"; }
-info()  { echo -e "  ${CYN}·${R}  $*"; }
-warn()  { echo -e "  ${YEL}⚠${R}  $*"; }
-err()   { echo -e "  ${RED}✗${R}  $*"; }
-title() { echo; echo -e "  ${BOLD}${ACC}$*${R}"; hr; }
-dryp()  { $DRY && echo -e "  ${DIM}[dry]  $*${R}"; }
+
+###############################################################################
+# Printing
+###############################################################################
+
+line() {
+
+    printf "${GRAY}"
+
+    printf '─%.0s' $(seq 1 "$WIDTH")
+
+    printf "${RESET}\n"
+
+}
+
+title() {
+
+    echo
+    echo -e "${BOLD}${LIGHT}$*${RESET}"
+
+    line
+
+}
+
+ok() {
+
+    echo -e "${GREEN}✓${RESET} $*"
+
+    log "[ OK ] $*"
+
+}
+
+warn() {
+
+    echo -e "${YELLOW}!${RESET} $*"
+
+    log "[WARN] $*"
+
+}
+
+err() {
+
+    echo -e "${RED}✗${RESET} $*"
+
+    log "[FAIL] $*"
+
+}
+
+info() {
+
+    echo -e "${CYAN}>${RESET} $*"
+
+    log "[INFO] $*"
+
+}
+
+###############################################################################
+# Banner
+###############################################################################
+
+banner() {
+
+clear
+
+echo -e "$LIGHT"
+
+cat <<'EOF'
+
+██╗  ██╗██╗   ██╗██████╗ ██████╗ ███╗   ███╗ ██████╗ ███╗   ██╗ ██████╗
+██║  ██║╚██╗ ██╔╝██╔══██╗██╔══██╗████╗ ████║██╔═══██╗████╗  ██║██╔═══██╗
+███████║ ╚████╔╝ ██████╔╝██████╔╝██╔████╔██║██║   ██║██╔██╗ ██║██║   ██║
+██╔══██║  ╚██╔╝  ██╔═══╝ ██╔══██╗██║╚██╔╝██║██║   ██║██║╚██╗██║██║   ██║
+██║  ██║   ██║   ██║     ██║  ██║██║ ╚═╝ ██║╚██████╔╝██║ ╚████║╚██████╔╝
+╚═╝  ╚═╝   ╚═╝   ╚═╝     ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝
+
+EOF
+
+echo -e "${GRAY}Installer v${SCRIPT_VERSION}${RESET}"
+
+[[ "$DRY_RUN" == true ]] &&
+echo -e "${YELLOW}DRY RUN ENABLED${RESET}"
+
+line
+
+}
+
+###############################################################################
+# Cleanup
+###############################################################################
+
+cleanup() {
+
+    tput sgr0
+
+}
+
+trap cleanup EXIT
+
+###############################################################################
+# Error handler
+###############################################################################
+
+on_error() {
+
+    err "Installation failed."
+
+    err "Line: $1"
+
+    exit 1
+
+}
+
+trap 'on_error $LINENO' ERR
+
+###############################################################################
+# Command Exists
+###############################################################################
+
+has() {
+
+    command -v "$1" >/dev/null 2>&1
+
+}
+
+###############################################################################
+# Ask
+###############################################################################
 
 ask() {
-    local p="$1" d="${2:-y}" yn="[Y/n]"
-    [[ "$d" == n ]] && yn="[y/N]"
-    echo -en "  ${HI}?${R}  $p ${DIM}$yn${R}  " >&2
-    read -r a; a="${a:-$d}"; [[ "${a,,}" == y* ]]
-}
 
-cmd_ok() { command -v "$1" &>/dev/null; }
+    local prompt="$1"
 
-# Symlink src → dst, backing up any existing non-symlink file
-safe_link() {
-    local src="$1" dst="$2"
-    if $DRY; then dryp "ln -sf  $(basename "$src")  →  $dst"; return; fi
-    mkdir -p "$(dirname "$dst")"
-    if [[ -e "$dst" && ! -L "$dst" ]]; then
-        mv "$dst" "${dst}.bak.$(date +%s)"
-        warn "backed up  $(basename "$dst")"
-    fi
-    ln -sf "$src" "$dst" && ok "$(basename "$dst")"
-}
+    local default="${2:-y}"
 
-# Copy only if target doesn't already exist (for user-owned files like wallpaper)
-safe_copy_once() {
-    local src="$1" dst="$2"
-    if $DRY; then dryp "cp (once)  $src  →  $dst"; return; fi
-    if [[ -e "$dst" ]]; then info "kept existing  $dst"; return; fi
-    mkdir -p "$(dirname "$dst")"
-    cp "$src" "$dst" && ok "$(basename "$dst")"
-}
+    local answer
 
-mark_x() { $DRY || chmod +x "$@" 2>/dev/null || true; }
+    if [[ "$default" == "y" ]]; then
 
-# ── banner ────────────────────────────────────────────────────────────
-clear; echo -e "${FG}"
-ctr "${BOLD}${HI}╔══════════════════════════════════════╗"
-ctr "${BOLD}${HI}║          H Y P R   M O N O           ║"
-ctr "${BOLD}${HI}╚══════════════════════════════════════╝ ${R}"; echo
-$DRY && { ctr "${YEL}${BOLD}⚡  DRY-RUN — nothing will be written  ⚡${R}"; echo; }
-hr
+        printf "%b?%b %s [Y/n]: " \
+            "$CYAN" "$RESET" "$prompt"
 
-# ── dependency check ──────────────────────────────────────────────────
-title "Checking dependencies"
-REQUIRED=(hyprland hyprpaper hypridle hyprlock kitty wofi)
-OPTIONAL=(rofi fuzzel nm-applet playerctl brightnessctl wpctl fc-cache)
-MISSING=()
-
-for d in "${REQUIRED[@]}"; do
-    cmd_ok "$d" && ok "${BOLD}$d${R}" || { err "${BOLD}$d${R}  ${DIM}(required)${R}"; MISSING+=("$d"); }
-done
-echo
-for d in "${OPTIONAL[@]}"; do
-    cmd_ok "$d" && ok "${DIM}$d  (optional)${R}" \
-                || warn "${DIM}$d  (optional)${R}"
-done
-
-if [[ ${#MISSING[@]} -gt 0 ]]; then
-    echo; warn "Missing required: ${MISSING[*]}"
-    if cmd_ok pacman && ask "Install missing via pacman?" n; then
-        $DRY || sudo pacman -S --needed "${MISSING[@]}"
     else
-        ask "Continue without them?" n || { echo; exit 1; }
-    fi
-fi
 
-# ── component selector ────────────────────────────────────────────────
-title "Select components"
-declare -A INST
-declare -a MENU=(
-    "hyprland"   "Core config — binds, rules, animations, env…"
-    "hyprlock"   "Lock screen + idle daemon"
-    "hyprpaper"  "Wallpaper daemon config + default wallpaper"
-    "wofi"       "App launcher (wofi)"
-    "rofi"       "App launcher (rofi)"
-    "kitty"      "Terminal emulator"
-    "fuzzel"     "Fuzzel launcher + emoji picker"
-    "fonts"      "Fontconfig rules"
-    "xdg"        "XDG desktop portal"
-    "scripts"    "Helper scripts → ~/.local/bin"
+        printf "%b?%b %s [y/N]: " \
+            "$CYAN" "$RESET" "$prompt"
+
+    fi
+
+    read -r answer
+
+    answer="${answer:-$default}"
+
+    [[ "${answer,,}" =~ ^y ]]
+
+}
+
+###############################################################################
+# Dry Run
+###############################################################################
+
+run() {
+
+    if $DRY_RUN
+
+    then
+
+        info "[dry-run] $*"
+
+    else
+
+        "$@"
+
+    fi
+
+}
+
+###############################################################################
+# Backup
+###############################################################################
+
+backup() {
+
+    local target="$1"
+
+    [[ -e "$target" ]] || return
+
+    [[ -L "$target" ]] && return
+
+    local backup
+
+    backup="${target}.bak.$(date +%s)"
+
+    mv "$target" "$backup"
+
+    ok "Backup created"
+
+}
+
+###############################################################################
+# Symlink
+###############################################################################
+
+link() {
+
+    local src="$1"
+
+    local dst="$2"
+
+    mkdir -p "$(dirname "$dst")"
+
+    backup "$dst"
+
+    run ln -sf "$src" "$dst"
+
+    ok "$(basename "$dst")"
+
+}
+
+###############################################################################
+# Copy Once
+###############################################################################
+
+copy_once() {
+
+    local src="$1"
+
+    local dst="$2"
+
+    [[ -f "$src" ]] || {
+
+        warn "Missing $(basename "$src")"
+
+        return
+
+    }
+
+    if [[ -f "$dst" ]]
+
+    then
+
+        info "Keeping existing $(basename "$dst")"
+
+        return
+
+    fi
+
+    mkdir -p "$(dirname "$dst")"
+
+    run cp "$src" "$dst"
+
+}
+
+###############################################################################
+# Start
+###############################################################################
+
+banner
+title "Preparing installation"
+###############################################################################
+# Repository Validation
+###############################################################################
+
+validate_repo() {
+
+    title "Validating repository"
+
+    local required=(
+        "config"
+        "scripts"
+    )
+
+    local missing=()
+
+    for dir in "${required[@]}"; do
+        if [[ ! -d "$DOTS/$dir" ]]; then
+            missing+=("$dir")
+        fi
+    done
+
+    if (( ${#missing[@]} > 0 )); then
+        err "Repository structure is invalid."
+        printf "Missing:\n"
+
+        for m in "${missing[@]}"; do
+            printf "  • %s\n" "$m"
+        done
+
+        exit 1
+    fi
+
+    ok "Repository structure verified"
+
+}
+
+###############################################################################
+# Package Manager Detection
+###############################################################################
+
+PKG_MANAGER=""
+AUR_HELPER=""
+
+detect_package_manager() {
+
+    title "Detecting package manager"
+
+    if has pacman; then
+        PKG_MANAGER="pacman"
+        ok "Detected pacman"
+    else
+        err "Unsupported distribution."
+        exit 1
+    fi
+
+    for helper in yay paru; do
+        if has "$helper"; then
+            AUR_HELPER="$helper"
+            ok "Detected AUR helper: $helper"
+            break
+        fi
+    done
+
+    [[ -z "$AUR_HELPER" ]] && warn "No AUR helper detected."
+
+}
+
+###############################################################################
+# Dependencies
+###############################################################################
+
+PACMAN_PACKAGES=(
+    hyprland
+    hyprpaper
+    hypridle
+    hyprlock
+
+    kitty
+    wofi
+    fuzzel
+
+    pipewire
+    wireplumber
+    networkmanager
+
+    brightnessctl
+    playerctl
+    cliphist
+    wl-clipboard
+
+    grim
+    slurp
+    swappy
+
+    jq
+    imagemagick
+
+    noto-fonts
+    noto-fonts-emoji
+
+    ttf-jetbrains-mono-nerd
+
+    xdg-desktop-portal-hyprland
 )
 
-for (( i=0; i<${#MENU[@]}; i+=2 )); do
-    k="${MENU[$i]}" d="${MENU[$i+1]}"
-    if ask "Install ${BOLD}$k${R}  ${DIM}($d)${R}?" y; then
-        INST[$k]=1; info "${ACC}$k${R} queued"
-    else
-        INST[$k]=0; warn "$k skipped"
-    fi
-done
+AUR_PACKAGES=(
+    satty
+)
 
-QUEUE=()
-for k in "${!INST[@]}"; do [[ "${INST[$k]}" == 1 ]] && QUEUE+=("$k"); done
-IFS=$'\n' QUEUE=($(sort <<<"${QUEUE[*]}")); unset IFS
+###############################################################################
+# Install Packages
+###############################################################################
 
-echo; hr
-echo -e "\n  ${BOLD}Will install:${R}  ${ACC}${QUEUE[*]}${R}\n"
-ask "Proceed?" y || { echo; exit 1; }
+install_packages() {
 
-# ── install functions ─────────────────────────────────────────────────
-# All source paths use $DOTS/config/* which mirrors ~/.config/* exactly.
-C="$HOME/.config"   # target root
-S="$DOTS/config"    # source root
+    title "Checking dependencies"
 
-do_hyprland() {
-    title "Hyprland"
-    # Entry point
-    safe_link "$S/hypr/hyprland.lua" "$C/hypr/hyprland.lua"
-    # Modules
-    for f in "$S/hypr/hyprland/"*.lua; do
-        safe_link "$f" "$C/hypr/hyprland/$(basename "$f")"
-    done
-    # Lib + services (hyprland.lua requires these)
-    safe_link "$S/hypr/lib/init.lua"               "$C/hypr/lib/init.lua"
-    safe_link "$S/hypr/services/init.lua"          "$C/hypr/services/init.lua"
-    safe_link "$S/hypr/services/custom_config.lua" "$C/hypr/services/custom_config.lua"
-    # User custom stubs — created once, never overwritten
-    local cu="$C/hypr/custom"
-    for stub in env execs general keybinds rules variables; do
-        local f="$cu/${stub}.lua"
-if [[ ! -f "$f" ]]; then
-   $DRY || {
-       mkdir -p "$cu"
-       echo "-- ${stub}.lua - personal overrides (never overwritten)" > "$f"
-   }
-   ok "stub  $f"
-else
-    info "kept  $cu/${stub}.lua"
-fi
-done 
-}
-do_hyprlock() {
-    title "Hyprlock + Hypridle"
-    for f in "$S/hypr/hyprlock/"*; do
-        safe_link "$f" "$C/hypr/hyprlock/$(basename "$f")"
-    done
-    mark_x "$C/hypr/hyprlock/status.sh" "$C/hypr/hyprlock/caps-lock-check.sh"
-    ok "scripts marked executable"
-    # Symlink to where the daemons look by default
-    safe_link "$C/hypr/hyprlock/hyprlock.conf" "$C/hypr/hyprlock.conf"
-    safe_link "$C/hypr/hyprlock/hypridle.conf" "$C/hypr/hypridle.conf"
-}
+    local missing=()
 
-do_hyprpaper() {
-    title "Hyprpaper"
-    safe_link "$S/hypr/hyprpaper/hyprpaper.conf" "$C/hypr/hyprpaper/hyprpaper.conf"
-    safe_copy_once "$S/hypr/hyprpaper/wallpaper.jpg" "$C/hypr/hyprpaper/wallpaper.jpg"
-}
-    # ── 2. System packages ─────────────────────────────────────────
-    if cmd_ok pacman; then 
-        local: PACMAN_DEPS= ( pipewire playerctl dart-sass power-profiles-daemon networkmanager
-            brightnessctl pkgconf wf-recorder kitty python pacman-contrib
-            gtk3 cairo gtk-layer-shell libgirepository noto-fonts-emoji
-            gobject-introspection gobject-introspection-runtime python-pip
-            libnotify cliphist satty nvtop ) 
-        local MISSING_PKG=()
-        for p in "${PACMAN_DEPS[@]}"; do
-            pacman -Q "$p" &>/dev/null || MISSING_PKG+=("$p")
-        done
-        if [[ ${#MISSING_PKG[@]} -gt 0 ]]; then
-            warn "Missing pacman packages: ${MISSING_PKG[*]}"
-            if ask "Install them via pacman?" y; then
-                $DRY || sudo pacman -S --needed "${MISSING_PKG[@]}"
-            fi
-        else
-            ok "Pacman dependencies satisfied"
+    for pkg in "${PACMAN_PACKAGES[@]}"; do
+
+        if ! pacman -Q "$pkg" &>/dev/null; then
+            missing+=("$pkg")
         fi
 
-do_wofi() {
-    title "Wofi"
-    safe_link "$S/wofi/config"    "$C/wofi/config"
-    safe_link "$S/wofi/style.css" "$C/wofi/style.css"
-    safe_link "$S/wofi/colours"   "$C/wofi/colours"
-}
+    done
 
-do_rofi() {
-    title "Rofi"
-    safe_link "$S/rofi/config.rasi" "$C/rofi/config.rasi"
-}
+    if (( ${#missing[@]} == 0 )); then
 
-do_kitty() {
-    title "Kitty"
-    safe_link "$S/kitty/kitty.conf"          "$C/kitty/kitty.conf"
-    safe_link "$S/kitty/kitty-colours.conf"  "$C/kitty/kitty-colours.conf"
-}
+        ok "All pacman packages already installed"
 
-do_fuzzel() {
-    title "Fuzzel"
-    safe_link "$S/fuzzel/fuzzel.ini"       "$C/fuzzel/fuzzel.ini"
-    safe_link "$S/fuzzel/fuzzel-theme.ini" "$C/fuzzel/fuzzel-theme.ini"
-    mkdir -p "$HOME/.local/bin"
-    safe_link "$DOTS/scripts/fuzzel-emojis.sh" "$HOME/.local/bin/fuzzel-emojis"
-    mark_x "$HOME/.local/bin/fuzzel-emojis"
-}
+    else
 
-do_fonts() {
-    title "Fontconfig"
-    safe_link "$S/fontconfig/fonts.conf" "$C/fontconfig/fonts.conf"
-    if cmd_ok fc-cache; then
-        $DRY || fc-cache -f && ok "font cache rebuilt"
-    else warn "fc-cache not found — run manually"; fi
-}
+        warn "Missing packages:"
+        printf "  %s\n" "${missing[@]}"
 
-do_xdg() {
-    title "XDG desktop portal"
-    safe_link "$S/xdg-desktop-portal/hyprland-portals.conf" \
-              "$C/xdg-desktop-portal/hyprland-portals.conf"
-    if [[ -f "$S/kde-material-you-colors/config.conf" ]] && cmd_ok kde-material-you-colors; then
-        safe_link "$S/kde-material-you-colors/config.conf" \
-                  "$C/kde-material-you-colors/config.conf"
+        if ask "Install them now?" y; then
+
+            run sudo pacman -S --needed "${missing[@]}"
+
+        fi
+
     fi
+
+    if [[ -n "$AUR_HELPER" ]]; then
+
+        local aur_missing=()
+
+        for pkg in "${AUR_PACKAGES[@]}"; do
+
+            pacman -Q "$pkg" &>/dev/null || aur_missing+=("$pkg")
+
+        done
+
+        if (( ${#aur_missing[@]} > 0 )); then
+
+            warn "Missing AUR packages:"
+            printf "  %s\n" "${aur_missing[@]}"
+
+            if ask "Install AUR packages?" y; then
+
+                run "$AUR_HELPER" -S --needed "${aur_missing[@]}"
+
+            fi
+
+        fi
+
+    fi
+
 }
 
-do_scripts() {
-    title "Scripts"
-    mkdir -p "$HOME/.local/bin"
-    safe_link "$DOTS/scripts/launch_first_available.sh" \
-              "$HOME/.local/bin/launch_first_available.sh"
-    mark_x "$HOME/.local/bin/launch_first_available.sh"
+###############################################################################
+# Component Menu
+###############################################################################
+
+declare -A COMPONENTS
+
+MENU=(
+    hyprland  "Core Hyprland configuration"
+
+    hyprlock  "Lock screen"
+
+    hyprpaper "Wallpaper"
+
+    kitty     "Kitty terminal"
+
+    wofi      "Application launcher"
+
+    rofi      "Alternative launcher"
+
+    fuzzel    "Launcher + emoji picker"
+
+    fonts     "Font configuration"
+
+    xdg        "XDG portals"
+
+    scripts    "Utility scripts"
+)
+
+###############################################################################
+# Component Selection
+###############################################################################
+
+select_components() {
+
+    title "Component selection"
+
+    for ((i=0;i<${#MENU[@]};i+=2)); do
+
+        local key="${MENU[$i]}"
+        local desc="${MENU[$((i+1))]}"
+
+        if ask "$key — $desc" y; then
+
+            COMPONENTS["$key"]=1
+            ok "$key selected"
+
+        else
+
+            COMPONENTS["$key"]=0
+            info "$key skipped"
+
+        fi
+
+    done
+
 }
 
-# ── run ───────────────────────────────────────────────────────────────
-DONE=0; TOTAL=${#QUEUE[@]}
-for c in "${QUEUE[@]}"; do
-    case "$c" in
-        hyprland)  do_hyprland  ;;
-        hyprlock)  do_hyprlock  ;;
-        hyprpaper) do_hyprpaper ;;
-        tsumiki)   do_tsumiki   ;;
-        wofi)      do_wofi      ;;
-        rofi)      do_rofi      ;;
-        kitty)     do_kitty     ;;
-        fuzzel)    do_fuzzel    ;;
-        fonts)     do_fonts     ;;
-        xdg)       do_xdg       ;;
-        scripts)   do_scripts   ;;
-    esac
-    DONE=$(( DONE + 1 ))
-    F=$(( DONE * 28 / TOTAL )); E=$(( 28 - F ))
-    BAR=""; for (( x=0;x<F;x++ )); do BAR+="█"; done
-               for (( x=0;x<E;x++ )); do BAR+="░"; done
-    echo -e "  ${ACC}[${HI}${BAR}${ACC}]${R}  ${DIM}$DONE/$TOTAL${R}  ${GRN}$c${R}"
+###############################################################################
+# Build Queue
+###############################################################################
+
+QUEUE=()
+
+build_queue() {
+
+    QUEUE=()
+
+    for component in "${!COMPONENTS[@]}"; do
+
+        [[ "${COMPONENTS[$component]}" == 1 ]] && QUEUE+=("$component")
+
+    done
+
+    if (( ${#QUEUE[@]} == 0 )); then
+
+        err "Nothing selected."
+
+        exit 1
+
+    fi
+
+}
+
+###############################################################################
+# Progress Bar
+###############################################################################
+
+CURRENT_STEP=0
+TOTAL_STEPS=1
+
+progress() {
+
+    CURRENT_STEP=$((CURRENT_STEP+1))
+
+    local width=30
+
+    local filled=$((CURRENT_STEP*width/TOTAL_STEPS))
+
+    local empty=$((width-filled))
+
+    printf "\n["
+
+    for ((i=0;i<filled;i++)); do
+        printf "█"
+    done
+
+    for ((i=0;i<empty;i++)); do
+        printf "░"
+    done
+
+    printf "] %d/%d\n\n" \
+        "$CURRENT_STEP" \
+        "$TOTAL_STEPS"
+
+}
+
+###############################################################################
+# Initialize
+###############################################################################
+
+validate_repo
+
+detect_package_manager
+
+install_packages
+
+select_components
+
+build_queue
+
+TOTAL_STEPS=${#QUEUE[@]}
+
+title "Ready to install"
+
+printf "\nSelected components:\n\n"
+
+for item in "${QUEUE[@]}"; do
+    printf "  • %s\n" "$item"
 done
 
-# ── done ──────────────────────────────────────────────────────────────
-hr; echo
-ctr "${BOLD}${GRN}✦  Done  ✦${R}"; echo
-echo -e "  ${ACC}→${R}  Log out and back into Hyprland to apply"
-echo -e "  ${ACC}→${R}  Personal overrides:  ${BOLD}~/.config/hypr/custom/*.lua${R}"
-echo -e "  ${ACC}→${R}  Wallpaper:           ${BOLD}~/.config/hypr/hyprpaper/wallpaper.jpg${R}"
-echo -e "  ${ACC}→${R}  Restart Tsumiki:     ${BOLD}pkill tsumiki; ~/.config/tsumiki/init.sh -start${R}"
-echo -e "  ${ACC}→${R}  Existing files saved as  ${BOLD}*.bak.<timestamp>${R}"
-echo 
-fi
+echo
+
+ask "Continue installation?" y || exit 0
+install_hyprland() {
+    log "Installing Hyprland..."
+
+    if command -v hyprctl &>/dev/null; then
+        log "Hyprland already installed"
+        return 0
+    fi
+
+    sudo pacman -S --noconfirm hyprland xdg-desktop-portal-hyprland polkit-kde-agent
+
+    mkdir -p ~/.config/hypr
+
+    cat > ~/.config/hypr/hyprland.conf <<EOF
+# Basic Hyprland config
+monitor=,preferred,auto,1
+exec-once = waybar &
+exec-once = nm-applet &
+exec-once = polkit-kde-authentication-agent-1
+
+input {
+    kb_layout = pl
+    follow_mouse = 1
+}
+
+general {
+    gaps_in = 5
+    gaps_out = 10
+    border_size = 2
+}
+EOF
+
+    log "Hyprland installed"
+}
+
+install_hyprlock() {
+    log "Installing Hyprlock..."
+
+    sudo pacman -S --noconfirm hyprlock
+
+    mkdir -p ~/.config/hypr
+
+    cat > ~/.config/hypr/hyprlock.conf <<EOF
+general {
+    disable_loading_bar = false
+}
+
+background {
+    blur_passes = 3
+}
+
+input-field {
+    size = 200, 50
+    position = 0, -80
+}
+EOF
+
+    log "Hyprlock configured"
+}
+install_hyprpaper() {
+    log "Installing Hyprpaper..."
+
+    sudo pacman -S --noconfirm hyprpaper
+
+    mkdir -p ~/.config/hypr
+
+    cat > ~/.config/hypr/hyprpaper.conf <<EOF
+preload = ~/wallpapers/default.jpg
+wallpaper = ,~/wallpapers/default.jpg
+EOF
+
+    mkdir -p ~/wallpapers
+    log "Hyprpaper installed"
+}
+
+install_kitty() {
+    log "Installing Kitty terminal..."
+
+    sudo pacman -S --noconfirm kitty
+
+    mkdir -p ~/.config/kitty
+
+    cat > ~/.config/kitty/kitty.conf <<EOF
+font_family FiraCode Nerd Font
+font_size 12
+background_opacity 0.9
+enable_audio_bell no
+EOF
+
+    log "Kitty installed"
+}
+
+install_wofi() {
+    log "Installing Wofi..."
+
+    sudo pacman -S --noconfirm wofi
+
+    mkdir -p ~/.config/wofi
+
+    cat > ~/.config/wofi/config <<EOF
+show=drun
+prompt=Search...
+width=600
+height=400
+EOF
+
+    log "Wofi installed"
+}
+
+install_rofi() {
+    log "Installing Rofi..."
+
+    sudo pacman -S --noconfirm rofi
+
+    mkdir -p ~/.config/rofi
+
+    cat > ~/.config/rofi/config.rasi <<EOF
+configuration {
+    modi: "drun,run";
+    show-icons: true;
+}
+EOF
+
+    log "Rofi installed"
+}
+install_fuzzel() {
+    log "Installing Fuzzel..."
+
+    sudo pacman -S --noconfirm fuzzel
+
+    mkdir -p ~/.config/fuzzel
+
+    cat > ~/.config/fuzzel/fuzzel.ini <<EOF
+[main]
+font=FiraCode:size=12
+width=40
+EOF
+
+    log "Fuzzel installed"
+}
+
+install_fonts() {
+    log "Installing fonts..."
+
+    sudo pacman -S --noconfirm \
+        ttf-firacode-nerd \
+        ttf-jetbrains-mono-nerd \
+        noto-fonts \
+        noto-fonts-emoji
+
+    log "Fonts installed"
+}
+
+install_xdg() {
+    log "Configuring XDG user dirs..."
+
+    sudo pacman -S --noconfirm xdg-user-dirs
+
+    xdg-user-dirs-update
+
+    log "XDG configured"
+}
+
+install_scripts() {
+    log "Installing helper scripts..."
+
+    mkdir -p ~/.local/bin
+
+    cat > ~/.local/bin/lock.sh <<EOF
+#!/bin/bash
+hyprlock
+EOF
+    chmod +x ~/.local/bin/lock.sh
+
+    cat > ~/.local/bin/reload-hypr.sh <<EOF
+#!/bin/bash
+hyprctl reload
+EOF
+    chmod +x ~/.local/bin/reload-hypr.sh
+
+    log "Scripts installed"
+}
+
+install_component() {
+    case "$1" in
+        hyprland) install_hyprland ;;
+        hyprlock) install_hyprlock ;;
+        hyprpaper) install_hyprpaper ;;
+        kitty) install_kitty ;;
+        wofi) install_wofi ;;
+        rofi) install_rofi ;;
+        fuzzel) install_fuzzel ;;
+        fonts) install_fonts ;;
+        xdg) install_xdg ;;
+        scripts) install_scripts ;;
+        all)
+            install_hyprland
+            install_hyprlock
+            install_hyprpaper
+            install_kitty
+            install_wofi
+            install_rofi
+            install_fuzzel
+            install_fonts
+            install_xdg
+            install_scripts
+            ;;
+        *)
+            echo "Unknown component: $1"
+            exit 1
+            ;;
+    esac
+}
+
+install_loop() {
+    COMPONENTS=(
+        hyprland
+        hyprlock
+        hyprpaper
+        kitty
+        wofi
+        rofi
+        fuzzel
+        fonts
+        xdg
+        scripts
+    )
+
+    for c in "${COMPONENTS[@]}"; do
+        log "Installing $c..."
+        install_component "$c"
+    done
+
+    log "All components installed successfully"
+}
+
+log() {
+    echo -e "[INFO] $1"
+}
+
+error() {
+    echo -e "[ERROR] $1" >&2
+}
+
+show_banner() {
+    clear
+    echo "======================================="
+    echo "        HYPRLAND ECOSYSTEM INSTALL     "
+    echo "======================================="
+    echo ""
+    echo "  Machine: $(hostname)"
+    echo "  User:    $USER"
+    echo "  Date:    $(date)"
+    echo ""
+}
+
+check_system() {
+    log "Running system checks..."
+
+    if ! command -v pacman &>/dev/null; then
+        error "This installer is designed for Arch-based systems only."
+        exit 1
+    fi
+
+    if [[ $EUID -eq 0 ]]; then
+        error "Do NOT run this script as root."
+        exit 1
+    fi
+
+    sudo -v || {
+        error "Sudo authentication failed"
+        exit 1
+    }
+
+    log "System checks passed"
+}
+
+backup_configs() {
+    log "Backing up existing configs..."
+
+    BACKUP_DIR="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
+    mkdir -p "$BACKUP_DIR"
+
+    TARGETS=(
+        hypr
+        kitty
+        wofi
+        rofi
+        fuzzel
+    )
+
+    for t in "${TARGETS[@]}"; do
+        if [[ -d "$HOME/.config/$t" ]]; then
+            cp -r "$HOME/.config/$t" "$BACKUP_DIR/"
+            log "Backed up $t"
+        fi
+    done
+
+    log "Backup stored in $BACKUP_DIR"
+}
+
+main() {
+    show_banner
+    check_system
+    backup_configs
+
+    log "Starting installation..."
+    install_loop
+    log "Installation complete!"
+}
+
+parse_args() {
+    if [[ $# -eq 0 ]]; then
+        main
+        return
+    fi
+
+    case "$1" in
+        --all)
+            main
+            ;;
+        --component)
+            if [[ -z "$2" ]]; then
+                error "Missing component name"
+                exit 1
+            fi
+            check_system
+            install_component "$2"
+            ;;
+        --list)
+            echo "Available components:"
+            echo "  hyprland"
+            echo "  hyprlock"
+            echo "  hyprpaper"
+            echo "  kitty"
+            echo "  wofi"
+            echo "  rofi"
+            echo "  fuzzel"
+            echo "  fonts"
+            echo "  xdg"
+            echo "  scripts"
+            ;;
+        --help)
+            echo "Usage:"
+            echo "  ./install.sh            # full install"
+            echo "  ./install.sh --all      # full install"
+            echo "  ./install.sh --component kitty"
+            echo "  ./install.sh --list"
+            ;;
+        *)
+            error "Unknown flag: $1"
+            exit 1
+            ;;
+    esac
+}
+
+final_message() {
+    echo ""
+    echo "======================================="
+    echo "  INSTALLATION FINISHED SUCCESSFULLY   "
+    echo "======================================="
+    echo ""
+    echo "Next steps:"
+    echo "  1. Reboot system"
+    echo "  2. Select Hyprland session"
+    echo "  3. Run hyprctl reload if needed"
+    echo ""
+}
+
+parse_args "$@"
+final_message
