@@ -178,7 +178,7 @@ do_hyprpaper() {
 }
     # ── 2. System packages ─────────────────────────────────────────
     if cmd_ok pacman; then 
-        local PACMAN_DEPS=(pipewire playerctl dart-sass power-profiles-daemon networkmanager
+        local: PACMAN_DEPS=(pipewire playerctl dart-sass power-profiles-daemon networkmanager
             brightnessctl pkgconf wf-recorder kitty python pacman-contrib
             gtk3 cairo gtk-layer-shell libgirepository noto-fonts-emoji
             gobject-introspection gobject-introspection-runtime python-pip
