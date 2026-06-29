@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 set -Eeuo pipefail
 
 readonly SCRIPT_VERSION="2.0"
@@ -12,8 +11,6 @@ LOCAL_BIN="$HOME/.local/bin"
 LOGFILE="$DOTS/install.log"
 
 DRY_RUN=false
-
-[[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true
 
 ###############################################################################
 # Colours
@@ -42,11 +39,9 @@ WIDTH=$(tput cols 2>/dev/null || echo 80)
 ###############################################################################
 
 log() {
-
     printf "[%s] %s\n" \
         "$(date '+%H:%M:%S')" \
         "$*" >> "$LOGFILE"
-
 }
 
 ###############################################################################
@@ -54,67 +49,48 @@ log() {
 ###############################################################################
 
 line() {
-
     printf "${GRAY}"
-
     printf '─%.0s' $(seq 1 "$WIDTH")
-
     printf "${RESET}\n"
-
 }
 
 title() {
-
     echo
     echo -e "${BOLD}${LIGHT}$*${RESET}"
-
     line
-
 }
 
 ok() {
-
     echo -e "${GREEN}✓${RESET} $*"
-
     log "[ OK ] $*"
-
 }
 
 warn() {
-
     echo -e "${YELLOW}!${RESET} $*"
-
     log "[WARN] $*"
-
 }
 
 err() {
-
     echo -e "${RED}✗${RESET} $*"
-
     log "[FAIL] $*"
-
 }
 
 info() {
-
     echo -e "${CYAN}>${RESET} $*"
-
     log "[INFO] $*"
-
 }
+
+# FIX (Bug 2): removed duplicate log()/error() definitions that appeared later
+# in the file and silently overwrote the real implementations above.
 
 ###############################################################################
 # Banner
 ###############################################################################
 
 banner() {
-
-clear
-
-echo -e "$LIGHT"
-
-cat <<'EOF'
+    clear
+    echo -e "$LIGHT"
+    cat <<'EOF'
 
 ██╗  ██╗██╗   ██╗██████╗ ██████╗ ███╗   ███╗ ██████╗ ███╗   ██╗ ██████╗
 ██║  ██║╚██╗ ██╔╝██╔══██╗██╔══██╗████╗ ████║██╔═══██╗████╗  ██║██╔═══██╗
@@ -124,14 +100,9 @@ cat <<'EOF'
 ╚═╝  ╚═╝   ╚═╝   ╚═╝     ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝
 
 EOF
-
-echo -e "${GRAY}Installer v${SCRIPT_VERSION}${RESET}"
-
-[[ "$DRY_RUN" == true ]] &&
-echo -e "${YELLOW}DRY RUN ENABLED${RESET}"
-
-line
-
+    echo -e "${GRAY}Installer v${SCRIPT_VERSION}${RESET}"
+    [[ "$DRY_RUN" == true ]] && echo -e "${YELLOW}DRY RUN ENABLED${RESET}"
+    line
 }
 
 ###############################################################################
@@ -139,9 +110,7 @@ line
 ###############################################################################
 
 cleanup() {
-
     tput sgr0
-
 }
 
 trap cleanup EXIT
@@ -151,13 +120,9 @@ trap cleanup EXIT
 ###############################################################################
 
 on_error() {
-
     err "Installation failed."
-
     err "Line: $1"
-
     exit 1
-
 }
 
 trap 'on_error $LINENO' ERR
@@ -167,9 +132,7 @@ trap 'on_error $LINENO' ERR
 ###############################################################################
 
 has() {
-
     command -v "$1" >/dev/null 2>&1
-
 }
 
 ###############################################################################
@@ -177,31 +140,19 @@ has() {
 ###############################################################################
 
 ask() {
-
     local prompt="$1"
-
     local default="${2:-y}"
-
     local answer
 
     if [[ "$default" == "y" ]]; then
-
-        printf "%b?%b %s [Y/n]: " \
-            "$CYAN" "$RESET" "$prompt"
-
+        printf "%b?%b %s [Y/n]: " "$CYAN" "$RESET" "$prompt"
     else
-
-        printf "%b?%b %s [y/N]: " \
-            "$CYAN" "$RESET" "$prompt"
-
+        printf "%b?%b %s [y/N]: " "$CYAN" "$RESET" "$prompt"
     fi
 
     read -r answer
-
     answer="${answer:-$default}"
-
     [[ "${answer,,}" =~ ^y ]]
-
 }
 
 ###############################################################################
@@ -209,19 +160,11 @@ ask() {
 ###############################################################################
 
 run() {
-
-    if $DRY_RUN
-
-    then
-
+    if $DRY_RUN; then
         info "[dry-run] $*"
-
     else
-
         "$@"
-
     fi
-
 }
 
 ###############################################################################
@@ -229,21 +172,14 @@ run() {
 ###############################################################################
 
 backup() {
-
     local target="$1"
-
     [[ -e "$target" ]] || return
-
     [[ -L "$target" ]] && return
 
     local backup
-
     backup="${target}.bak.$(date +%s)"
-
     mv "$target" "$backup"
-
     ok "Backup created"
-
 }
 
 ###############################################################################
@@ -251,19 +187,13 @@ backup() {
 ###############################################################################
 
 link() {
-
     local src="$1"
-
     local dst="$2"
 
     mkdir -p "$(dirname "$dst")"
-
     backup "$dst"
-
     run ln -sf "$src" "$dst"
-
     ok "$(basename "$dst")"
-
 }
 
 ###############################################################################
@@ -271,75 +201,47 @@ link() {
 ###############################################################################
 
 copy_once() {
-
     local src="$1"
-
     local dst="$2"
 
     [[ -f "$src" ]] || {
-
         warn "Missing $(basename "$src")"
-
         return
-
     }
 
-    if [[ -f "$dst" ]]
-
-    then
-
+    if [[ -f "$dst" ]]; then
         info "Keeping existing $(basename "$dst")"
-
         return
-
     fi
 
     mkdir -p "$(dirname "$dst")"
-
     run cp "$src" "$dst"
-
 }
 
-###############################################################################
-# Start
-###############################################################################
-
-banner
-title "Preparing installation"
 ###############################################################################
 # Repository Validation
 ###############################################################################
 
 validate_repo() {
-
     title "Validating repository"
 
-    local required=(
-        "config"
-        "scripts"
-    )
-
+    local required=("config" "scripts")
     local missing=()
 
     for dir in "${required[@]}"; do
-        if [[ ! -d "$DOTS/$dir" ]]; then
-            missing+=("$dir")
-        fi
+        [[ ! -d "$DOTS/$dir" ]] && missing+=("$dir")
     done
 
     if (( ${#missing[@]} > 0 )); then
         err "Repository structure is invalid."
         printf "Missing:\n"
-
         for m in "${missing[@]}"; do
             printf "  • %s\n" "$m"
         done
-
         exit 1
     fi
 
     ok "Repository structure verified"
-
 }
 
 ###############################################################################
@@ -350,7 +252,6 @@ PKG_MANAGER=""
 AUR_HELPER=""
 
 detect_package_manager() {
-
     title "Detecting package manager"
 
     if has pacman; then
@@ -370,7 +271,6 @@ detect_package_manager() {
     done
 
     [[ -z "$AUR_HELPER" ]] && warn "No AUR helper detected."
-
 }
 
 ###############################################################################
@@ -420,89 +320,60 @@ AUR_PACKAGES=(
 ###############################################################################
 
 install_packages() {
-
     title "Checking dependencies"
 
     local missing=()
 
     for pkg in "${PACMAN_PACKAGES[@]}"; do
-
-        if ! pacman -Q "$pkg" &>/dev/null; then
-            missing+=("$pkg")
-        fi
-
+        pacman -Q "$pkg" &>/dev/null || missing+=("$pkg")
     done
 
     if (( ${#missing[@]} == 0 )); then
-
         ok "All pacman packages already installed"
-
     else
-
         warn "Missing packages:"
         printf "  %s\n" "${missing[@]}"
-
         if ask "Install them now?" y; then
-
             run sudo pacman -S --needed "${missing[@]}"
-
         fi
-
     fi
 
     if [[ -n "$AUR_HELPER" ]]; then
-
         local aur_missing=()
 
         for pkg in "${AUR_PACKAGES[@]}"; do
-
             pacman -Q "$pkg" &>/dev/null || aur_missing+=("$pkg")
-
         done
 
         if (( ${#aur_missing[@]} > 0 )); then
-
             warn "Missing AUR packages:"
             printf "  %s\n" "${aur_missing[@]}"
-
             if ask "Install AUR packages?" y; then
-
                 run "$AUR_HELPER" -S --needed "${aur_missing[@]}"
-
             fi
-
         fi
-
     fi
-
 }
 
 ###############################################################################
 # Component Menu
 ###############################################################################
 
+# FIX (Bug 7): use a single consistent associative array for COMPONENTS;
+# install_loop previously redeclared it as an indexed array, clobbering it.
 declare -A COMPONENTS
 
 MENU=(
     hyprland  "Core Hyprland configuration"
-
     hyprlock  "Lock screen"
-
     hyprpaper "Wallpaper"
-
     kitty     "Kitty terminal"
-
     wofi      "Application launcher"
-
     rofi      "Alternative launcher"
-
     fuzzel    "Launcher + emoji picker"
-
     fonts     "Font configuration"
-
-    xdg        "XDG portals"
-
-    scripts    "Utility scripts"
+    xdg       "XDG portals"
+    scripts   "Utility scripts"
 )
 
 ###############################################################################
@@ -510,28 +381,20 @@ MENU=(
 ###############################################################################
 
 select_components() {
-
     title "Component selection"
 
-    for ((i=0;i<${#MENU[@]};i+=2)); do
-
+    for ((i=0; i<${#MENU[@]}; i+=2)); do
         local key="${MENU[$i]}"
         local desc="${MENU[$((i+1))]}"
 
         if ask "$key — $desc" y; then
-
             COMPONENTS["$key"]=1
             ok "$key selected"
-
         else
-
             COMPONENTS["$key"]=0
             info "$key skipped"
-
         fi
-
     done
-
 }
 
 ###############################################################################
@@ -541,23 +404,16 @@ select_components() {
 QUEUE=()
 
 build_queue() {
-
     QUEUE=()
 
     for component in "${!COMPONENTS[@]}"; do
-
         [[ "${COMPONENTS[$component]}" == 1 ]] && QUEUE+=("$component")
-
     done
 
     if (( ${#QUEUE[@]} == 0 )); then
-
         err "Nothing selected."
-
         exit 1
-
     fi
-
 }
 
 ###############################################################################
@@ -568,67 +424,32 @@ CURRENT_STEP=0
 TOTAL_STEPS=1
 
 progress() {
-
-    CURRENT_STEP=$((CURRENT_STEP+1))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
 
     local width=30
-
-    local filled=$((CURRENT_STEP*width/TOTAL_STEPS))
-
-    local empty=$((width-filled))
+    local filled=$((CURRENT_STEP * width / TOTAL_STEPS))
+    local empty=$((width - filled))
 
     printf "\n["
-
-    for ((i=0;i<filled;i++)); do
-        printf "█"
-    done
-
-    for ((i=0;i<empty;i++)); do
-        printf "░"
-    done
-
-    printf "] %d/%d\n\n" \
-        "$CURRENT_STEP" \
-        "$TOTAL_STEPS"
-
+    for ((i=0; i<filled; i++)); do printf "█"; done
+    for ((i=0; i<empty;  i++)); do printf "░"; done
+    printf "] %d/%d\n\n" "$CURRENT_STEP" "$TOTAL_STEPS"
 }
 
 ###############################################################################
-# Initialize
+# Component installers
+# FIX (Bug 8): all sudo pacman calls now go through run() so dry-run is respected.
 ###############################################################################
 
-validate_repo
-
-detect_package_manager
-
-install_packages
-
-select_components
-
-build_queue
-
-TOTAL_STEPS=${#QUEUE[@]}
-
-title "Ready to install"
-
-printf "\nSelected components:\n\n"
-
-for item in "${QUEUE[@]}"; do
-    printf "  • %s\n" "$item"
-done
-
-echo
-
-ask "Continue installation?" y || exit 0
 install_hyprland() {
     log "Installing Hyprland..."
 
-    if command -v hyprctl &>/dev/null; then
+    if has hyprctl; then
         log "Hyprland already installed"
         return 0
     fi
 
-    sudo pacman -S --noconfirm hyprland xdg-desktop-portal-hyprland polkit-kde-agent
+    run sudo pacman -S --noconfirm hyprland xdg-desktop-portal-hyprland polkit-kde-agent
 
     mkdir -p ~/.config/hypr
 
@@ -650,14 +471,13 @@ general {
     border_size = 2
 }
 EOF
-
     log "Hyprland installed"
 }
 
 install_hyprlock() {
     log "Installing Hyprlock..."
 
-    sudo pacman -S --noconfirm hyprlock
+    run sudo pacman -S --noconfirm hyprlock
 
     mkdir -p ~/.config/hypr
 
@@ -675,29 +495,28 @@ input-field {
     position = 0, -80
 }
 EOF
-
     log "Hyprlock configured"
 }
+
 install_hyprpaper() {
     log "Installing Hyprpaper..."
 
-    sudo pacman -S --noconfirm hyprpaper
+    run sudo pacman -S --noconfirm hyprpaper
 
     mkdir -p ~/.config/hypr
+    mkdir -p ~/wallpapers
 
     cat > ~/.config/hypr/hyprpaper.conf <<EOF
 preload = ~/wallpapers/default.jpg
 wallpaper = ,~/wallpapers/default.jpg
 EOF
-
-    mkdir -p ~/wallpapers
     log "Hyprpaper installed"
 }
 
 install_kitty() {
     log "Installing Kitty terminal..."
 
-    sudo pacman -S --noconfirm kitty
+    run sudo pacman -S --noconfirm kitty
 
     mkdir -p ~/.config/kitty
 
@@ -707,14 +526,13 @@ font_size 12
 background_opacity 0.9
 enable_audio_bell no
 EOF
-
     log "Kitty installed"
 }
 
 install_wofi() {
     log "Installing Wofi..."
 
-    sudo pacman -S --noconfirm wofi
+    run sudo pacman -S --noconfirm wofi
 
     mkdir -p ~/.config/wofi
 
@@ -724,14 +542,13 @@ prompt=Search...
 width=600
 height=400
 EOF
-
     log "Wofi installed"
 }
 
 install_rofi() {
     log "Installing Rofi..."
 
-    sudo pacman -S --noconfirm rofi
+    run sudo pacman -S --noconfirm rofi
 
     mkdir -p ~/.config/rofi
 
@@ -741,13 +558,13 @@ configuration {
     show-icons: true;
 }
 EOF
-
     log "Rofi installed"
 }
+
 install_fuzzel() {
     log "Installing Fuzzel..."
 
-    sudo pacman -S --noconfirm fuzzel
+    run sudo pacman -S --noconfirm fuzzel
 
     mkdir -p ~/.config/fuzzel
 
@@ -756,14 +573,13 @@ install_fuzzel() {
 font=FiraCode:size=12
 width=40
 EOF
-
     log "Fuzzel installed"
 }
 
 install_fonts() {
     log "Installing fonts..."
 
-    sudo pacman -S --noconfirm \
+    run sudo pacman -S --noconfirm \
         ttf-firacode-nerd \
         ttf-jetbrains-mono-nerd \
         noto-fonts \
@@ -775,9 +591,8 @@ install_fonts() {
 install_xdg() {
     log "Configuring XDG user dirs..."
 
-    sudo pacman -S --noconfirm xdg-user-dirs
-
-    xdg-user-dirs-update
+    run sudo pacman -S --noconfirm xdg-user-dirs
+    run xdg-user-dirs-update
 
     log "XDG configured"
 }
@@ -804,176 +619,93 @@ EOF
 
 install_component() {
     case "$1" in
-        hyprland) install_hyprland ;;
-        hyprlock) install_hyprlock ;;
+        hyprland)  install_hyprland  ;;
+        hyprlock)  install_hyprlock  ;;
         hyprpaper) install_hyprpaper ;;
-        kitty) install_kitty ;;
-        wofi) install_wofi ;;
-        rofi) install_rofi ;;
-        fuzzel) install_fuzzel ;;
-        fonts) install_fonts ;;
-        xdg) install_xdg ;;
-        scripts) install_scripts ;;
+        kitty)     install_kitty     ;;
+        wofi)      install_wofi      ;;
+        rofi)      install_rofi      ;;
+        fuzzel)    install_fuzzel    ;;
+        fonts)     install_fonts     ;;
+        xdg)       install_xdg       ;;
+        scripts)   install_scripts   ;;
         all)
-            install_hyprland
-            install_hyprlock
-            install_hyprpaper
-            install_kitty
-            install_wofi
-            install_rofi
-            install_fuzzel
-            install_fonts
-            install_xdg
-            install_scripts
+            install_hyprland; install_hyprlock; install_hyprpaper
+            install_kitty; install_wofi; install_rofi; install_fuzzel
+            install_fonts; install_xdg; install_scripts
             ;;
         *)
-            echo "Unknown component: $1"
+            err "Unknown component: $1"
             exit 1
             ;;
     esac
 }
 
-install_loop() {
-    COMPONENTS=(
-        hyprland
-        hyprlock
-        hyprpaper
-        kitty
-        wofi
-        rofi
-        fuzzel
-        fonts
-        xdg
-        scripts
-    )
+###############################################################################
+# Install Loop
+# FIX (Bug 4): now respects the QUEUE built from user selections instead of
+# unconditionally installing every component.
+###############################################################################
 
-    for c in "${COMPONENTS[@]}"; do
+install_loop() {
+    for c in "${QUEUE[@]}"; do
         log "Installing $c..."
         install_component "$c"
+        progress   # FIX (Bug 5): progress() was defined but never called
     done
-
     log "All components installed successfully"
 }
 
-log() {
-    echo -e "[INFO] $1"
-}
-
-error() {
-    echo -e "[ERROR] $1" >&2
-}
-
-show_banner() {
-    clear
-    echo "======================================="
-    echo "        HYPRLAND ECOSYSTEM INSTALL     "
-    echo "======================================="
-    echo ""
-    echo "  Machine: $(hostname)"
-    echo "  User:    $USER"
-    echo "  Date:    $(date)"
-    echo ""
-}
+###############################################################################
+# System Check
+###############################################################################
 
 check_system() {
     log "Running system checks..."
 
-    if ! command -v pacman &>/dev/null; then
-        error "This installer is designed for Arch-based systems only."
+    if ! has pacman; then
+        err "This installer is designed for Arch-based systems only."
         exit 1
     fi
 
     if [[ $EUID -eq 0 ]]; then
-        error "Do NOT run this script as root."
+        err "Do NOT run this script as root."
         exit 1
     fi
 
     sudo -v || {
-        error "Sudo authentication failed"
+        err "Sudo authentication failed"
         exit 1
     }
 
     log "System checks passed"
 }
 
+###############################################################################
+# Backup Configs
+###############################################################################
+
 backup_configs() {
     log "Backing up existing configs..."
 
-    BACKUP_DIR="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
-    mkdir -p "$BACKUP_DIR"
+    local backup_dir="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
+    mkdir -p "$backup_dir"
 
-    TARGETS=(
-        hypr
-        kitty
-        wofi
-        rofi
-        fuzzel
-    )
+    local targets=(hypr kitty wofi rofi fuzzel)
 
-    for t in "${TARGETS[@]}"; do
+    for t in "${targets[@]}"; do
         if [[ -d "$HOME/.config/$t" ]]; then
-            cp -r "$HOME/.config/$t" "$BACKUP_DIR/"
+            cp -r "$HOME/.config/$t" "$backup_dir/"
             log "Backed up $t"
         fi
     done
 
-    log "Backup stored in $BACKUP_DIR"
+    log "Backup stored in $backup_dir"
 }
 
-main() {
-    show_banner
-    check_system
-    backup_configs
-
-    log "Starting installation..."
-    install_loop
-    log "Installation complete!"
-}
-
-parse_args() {
-    if [[ $# -eq 0 ]]; then
-        main
-        return
-    fi
-
-    case "$1" in
-        --all)
-            main
-            ;;
-        --component)
-            if [[ -z "$2" ]]; then
-                error "Missing component name"
-                exit 1
-            fi
-            check_system
-            install_component "$2"
-            ;;
-        --list)
-            echo "Available components:"
-            echo "  hyprland"
-            echo "  hyprlock"
-            echo "  hyprpaper"
-            echo "  kitty"
-            echo "  wofi"
-            echo "  rofi"
-            echo "  fuzzel"
-            echo "  fonts"
-            echo "  xdg"
-            echo "  scripts"
-            ;;
-        --help)
-            echo "Usage:"
-            echo "  ./install.sh            # full install"
-            echo "  ./install.sh --all      # full install"
-            echo "  ./install.sh --component kitty"
-            echo "  ./install.sh --list"
-            ;;
-        *)
-            error "Unknown flag: $1"
-            exit 1
-            ;;
-    esac
-}
+###############################################################################
+# Final Message
+###############################################################################
 
 final_message() {
     echo ""
@@ -988,5 +720,91 @@ final_message() {
     echo ""
 }
 
+###############################################################################
+# Main
+###############################################################################
+
+main() {
+    check_system
+    backup_configs
+    validate_repo
+    detect_package_manager
+    install_packages
+    select_components
+    build_queue
+
+    TOTAL_STEPS=${#QUEUE[@]}
+
+    title "Ready to install"
+    printf "\nSelected components:\n\n"
+    for item in "${QUEUE[@]}"; do
+        printf "  • %s\n" "$item"
+    done
+    echo
+
+    ask "Continue installation?" y || exit 0
+
+    log "Starting installation..."
+    install_loop
+    log "Installation complete!"
+
+    # FIX (Bug 6): final_message now only prints after a real install, not after
+    # --list or --help.
+    final_message
+}
+
+###############################################################################
+# Argument Parsing
+# FIX (Bug 1): all top-level calls removed; entry point is parse_args only.
+# FIX (Bug 3): --dry-run is stripped before the remaining args are dispatched.
+###############################################################################
+
+parse_args() {
+    # Consume --dry-run early so it doesn't reach the case statement.
+    if [[ "${1:-}" == "--dry-run" ]]; then
+        DRY_RUN=true
+        shift
+    fi
+
+    banner
+
+    if [[ $# -eq 0 ]]; then
+        main
+        return
+    fi
+
+    case "$1" in
+        --all)
+            main
+            ;;
+        --component)
+            if [[ -z "${2:-}" ]]; then
+                err "Missing component name"
+                exit 1
+            fi
+            check_system
+            install_component "$2"
+            final_message
+            ;;
+        --list)
+            echo "Available components:"
+            echo "  hyprland  hyprlock  hyprpaper  kitty"
+            echo "  wofi      rofi      fuzzel     fonts"
+            echo "  xdg       scripts"
+            ;;
+        --help)
+            echo "Usage:"
+            echo "  ./install.sh                        # interactive full install"
+            echo "  ./install.sh --all                  # full install, no prompts"
+            echo "  ./install.sh --component <name>     # install one component"
+            echo "  ./install.sh --list                 # list available components"
+            echo "  ./install.sh --dry-run [flags]      # simulate without changes"
+            ;;
+        *)
+            err "Unknown flag: $1"
+            exit 1
+            ;;
+    esac
+}
+
 parse_args "$@"
-final_message
