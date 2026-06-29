@@ -177,14 +177,12 @@ do_hyprpaper() {
     safe_copy_once "$S/hypr/hyprpaper/wallpaper.jpg" "$C/hypr/hyprpaper/wallpaper.jpg"
 }
     # ── 2. System packages ─────────────────────────────────────────
-    if cmd_ok pacman; then
-        local PACMAN_DEPS=(
-            pipewire playerctl dart-sass power-profiles-daemon networkmanager
+    if cmd_ok pacman; then 
+        local PACMAN_DEPS=(pipewire playerctl dart-sass power-profiles-daemon networkmanager
             brightnessctl pkgconf wf-recorder kitty python pacman-contrib
             gtk3 cairo gtk-layer-shell libgirepository noto-fonts-emoji
             gobject-introspection gobject-introspection-runtime python-pip
-            libnotify cliphist satty nvtop
-        )
+            libnotify cliphist satty nvtop)
         local MISSING_PKG=()
         for p in "${PACMAN_DEPS[@]}"; do
             pacman -Q "$p" &>/dev/null || MISSING_PKG+=("$p")

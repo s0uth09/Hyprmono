@@ -236,7 +236,7 @@ hl.monitor({
 Pull the latest changes and re-run the installer. Your `~/.config/hypr/custom/` files are never touched.
 
 ```bash
-cd ~/.local/share/Hypr.dots
+cd ~/.local/share/Hyprmono
 git pull
 bash install.sh
 ```
