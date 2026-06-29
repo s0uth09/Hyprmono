@@ -106,7 +106,6 @@ Hypr.dots/
     │   │   ├── env.lua
     │   │   ├── general.lua
     │   │   ├── monitors.lua
-    │   │   ├── overlay.lua
     │   │   ├── permission.lua
     │   │   ├── variables.lua
     │   │   └── windowsrule.lua
@@ -130,8 +129,6 @@ Hypr.dots/
     │       ├── keybinds.lua
     │       ├── rules.lua
     │       └── variables.lua
-    ├── hydebar/
-    │   └── config.toml           ← bar config with HyprMono palette
     ├── wofi/
     │   ├── config
     │   ├── style.css
@@ -251,12 +248,6 @@ bash install.sh
 **Hyprland doesn't start**  
 Check `journalctl --user -xe` or `cat /tmp/hyprland*.log` for errors.
 
-**Hydebar not showing**  
-```bash
-pkill hydebar; hydebar &
-# check for errors:
-RUST_LOG=debug hydebar
-```
 
 **Wallpaper not showing**  
 Make sure `hyprpaper` is running and the path in `hyprpaper.conf` exists:

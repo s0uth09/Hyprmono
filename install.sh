@@ -184,7 +184,6 @@ do_hyprpaper() {
             gtk3 cairo gtk-layer-shell libgirepository noto-fonts-emoji
             gobject-introspection gobject-introspection-runtime python-pip
             libnotify cliphist satty nvtop
-        fi
         )
         local MISSING_PKG=()
         for p in "${PACMAN_DEPS[@]}"; do
@@ -283,4 +282,5 @@ echo -e "  ${ACC}→${R}  Personal overrides:  ${BOLD}~/.config/hypr/custom/*.lu
 echo -e "  ${ACC}→${R}  Wallpaper:           ${BOLD}~/.config/hypr/hyprpaper/wallpaper.jpg${R}"
 echo -e "  ${ACC}→${R}  Restart Tsumiki:     ${BOLD}pkill tsumiki; ~/.config/tsumiki/init.sh -start${R}"
 echo -e "  ${ACC}→${R}  Existing files saved as  ${BOLD}*.bak.<timestamp>${R}"
-echo
+echo 
+fi
