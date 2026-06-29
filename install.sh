@@ -729,7 +729,20 @@ main() {
     check_system
     backup_configs
     validate_repo
-    detect_package_manager
+   detect_package_manager() {
+    local pm="unknown"
+
+    for cmd in pacman apt dnf yum zypper; do
+        if command -v "$cmd" >/dev/null 2>&1; then
+            pm="$cmd"
+            break
+        fi
+    done
+
+    echo "$pm"
+
+    [[ "$pm" == "unknown" ]] && return 1
+}
     install_packages
     select_components
     build_queue
