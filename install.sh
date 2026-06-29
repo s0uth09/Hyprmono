@@ -184,6 +184,7 @@ do_hyprpaper() {
             gtk3 cairo gtk-layer-shell libgirepository noto-fonts-emoji
             gobject-introspection gobject-introspection-runtime python-pip
             libnotify cliphist satty nvtop
+        fi
         )
         local MISSING_PKG=()
         for p in "${PACMAN_DEPS[@]}"; do
