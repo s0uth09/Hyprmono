@@ -20,7 +20,7 @@
 | **Surface** | <img src="https://placehold.co/15x15/111111/111111.png" width="15" height="15" /> | `#111111` |
 | **Border** | <img src="https://placehold.co/15x15/444444/444444.png" width="15" height="15" /> | `#444444` |
 | **Accent** | <img src="https://placehold.co/15x15/cccccc/cccccc.png" width="15" height="15" /> | `#CCCCCC` |
-| **Foreground / Active** | <img src="https://placehold.co/15x15/ffffff/ffffff.png" width="15" height="15" /> | `#FFFFFF` |
+| **Foreground / Active** | <img src="https://placehold.co/15x15/ffffff/ffffff/ffffff.png" width="15" height="15" /> | `#FFFFFF` |
 
 ---
 
@@ -36,8 +36,8 @@ HyprMono is built on the principle of **visual silence**. By stripping away colo
 | :--- | :--- |
 | **Hyprland** | Native `.conf` based tiling compositor configuration, heavily modularized. |
 | **Waybar** | Minimalist status bar with custom monochrome modules. |
-| **Hyprlock** | Clean, high-contrast lock screen with JetBrains Mono typography. |
-| **Kitty** | GPU-accelerated terminal with a custom grayscale theme. |
+| **Hyprlock** | Clean, high-contrast lock screen with Nothing OS typography. |
+| **Kitty** | GPU-accelerated terminal with a custom grayscale theme and Nothing OS font. |
 | **Wofi / Rofi** | Unified application launchers and window switchers. |
 | **Dunst / SwayNC** | Ported notification systems for seamless visual integration. |
 | **Fuzzel** | Compact launcher with an integrated monochrome emoji picker. |
@@ -58,17 +58,29 @@ sudo pacman -S --needed \
     hyprland hyprpaper hypridle waybar kitty wofi rofi-wayland fuzzel \
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent \
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji \
-    nm-applet brightnessctl playerctl wireplumber pipewire-pulse \
+    network-manager-applet brightnessctl playerctl wireplumber pipewire-pulse \
     swaynotificationcenter dunst wlogout swaylock-effects \
     fish fastfetch
 ```
 
 ### 2. Setup
-Clone the repository and run the automated installer:
+Clone the repository into the standard local share directory and run the automated installer:
 
 ```bash
-git clone https://github.com/s0uth09/Hyprmono.git
-cd Hyprmono
+mkdir -p ~/.local/share
+cd ~/.local/share
+git clone https://github.com/s0uth09/Hyprmono.git hyprmono
+cd hyprmono
+bash scripts/install.sh
+```
+
+Alternatively, you can use the `hyde` command directly after cloning:
+
+```bash
+mkdir -p ~/.local/share
+cd ~/.local/share
+git clone https://github.com/s0uth09/Hyprmono.git hyprmono
+cd hyprmono
 ./hyde install
 ```
 
@@ -81,7 +93,13 @@ The installer will automatically handle backups of your existing configurations 
 HyprMono features a centralized management utility: **Hyde Shell**.
 
 ```bash
-./hyde [command]
+~/.local/share/hyprmono/hyde [command]
+```
+
+For convenience, a symlink `hyde` is created in `~/.local/bin/`, so you can simply run:
+
+```bash
+hyde [command]
 ```
 
 Available commands:
@@ -122,8 +140,9 @@ To change the monochrome palette, simply update the hex values in `variables.con
 ### File Tree
 
 ```text
-.
+~/.local/share/hyprmono/
 ├── assets/
+│   ├── fonts/
 │   ├── sounds/
 │   └── wallpapers/
 ├── config/
@@ -154,13 +173,13 @@ To change the monochrome palette, simply update the hex values in `variables.con
 To safely remove the configuration and restore your previous setup:
 
 ```bash
-./hyde uninstall
+hyde uninstall
 ```
 
 If you wish to completely wipe your local configs and reinstall a fresh copy from GitHub:
 
 ```bash
-./hyde reinstall
+hyde reinstall
 ```
 
 ---
