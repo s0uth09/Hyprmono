@@ -16,6 +16,10 @@ CONFIG_DIR="$HOME/.config"
 LOCAL_BIN="$HOME/.local/bin"
 LOGFILE="$DOTS/install.log"
 
+# --- Repository Placement ---
+# We want the repository to live in ~/.local/share/hyprmono
+TARGET_REPO_DIR="$HOME/.local/share/hyprmono"
+
 DRY_RUN=false
 
 # --- Colors ---
@@ -127,6 +131,12 @@ install_all_configs() {
         fi
     done
 
+    # Create the 'hyde' symlink for the main CLI
+    if [[ -f "$LOCAL_BIN/hyde-shell.sh" ]]; then
+        ln -sf "$LOCAL_BIN/hyde-shell.sh" "$LOCAL_BIN/hyde"
+        ok "Created 'hyde' command in $LOCAL_BIN"
+    fi
+
     # Install assets
     title "Installing assets"
     if [[ -d "$DOTS/assets" ]]; then
@@ -173,6 +183,22 @@ main() {
     fi
 
     sudo -v || { err "Sudo authentication failed"; exit 1; }
+
+    # Ensure repository is in the correct location (~/.local/share/hyprmono)
+    if [[ "$DOTS" != "$TARGET_REPO_DIR" ]]; then
+        info "Moving repository to $TARGET_REPO_DIR..."
+        mkdir -p "$HOME/.local/share"
+        # If the target exists, we might want to back it up or just merge
+        if [[ -d "$TARGET_REPO_DIR" && "$DOTS" != "$TARGET_REPO_DIR" ]]; then
+            warn "Target directory $TARGET_REPO_DIR already exists."
+        fi
+        
+        # We don't move 'DOTS' while running from it, but we can copy and advise
+        cp -r "$DOTS" "$TARGET_REPO_DIR"
+        ok "Repository copied to $TARGET_REPO_DIR"
+        info "Please run the installer from the new location: cd $TARGET_REPO_DIR && bash scripts/install.sh"
+        # If we are in the middle of an install, we continue but warn
+    fi
 
     if ask "Sync with GitHub repository before installing?" y; then
         sync_repo

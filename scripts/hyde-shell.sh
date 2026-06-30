@@ -15,7 +15,10 @@ BOLD="\e[1m"
 RESET="\e[0m"
 
 # --- Config ---
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# The script might be called via a symlink or directly.
+# We want to find the real path of the script to locate the repository.
+REAL_PATH=$(readlink -f "${BASH_SOURCE[0]}")
+REPO_DIR="$(cd "$(dirname "$REAL_PATH")/.." && pwd)"
 SCRIPTS_DIR="$REPO_DIR/scripts"
 
 # --- Helpers ---
@@ -25,7 +28,7 @@ err() { echo -e "${RED}hyde error >${RESET} $*" >&2; }
 show_help() {
     echo -e "${BOLD}${MAGENTA}H Y D E   S H E L L${RESET} - Hyprmono CLI"
     echo
-    echo -e "${BOLD}Usage:${RESET} hydra [command] [options]"
+    echo -e "${BOLD}Usage:${RESET} hyde [command] [options]"
     echo
     echo -e "${BOLD}Commands:${RESET}"
     echo -e "  install     Run the main installation script"
@@ -52,15 +55,19 @@ case "${1:-help}" in
         ;;
     update)
         log "Updating Hyprmono..."
-        cd "$REPO_DIR"
-        git pull origin master
-        log "Syncing configurations..."
-        bash "$SCRIPTS_DIR/install.sh" --skip-pkgs
+        if [[ -d "$REPO_DIR/.git" ]]; then
+            cd "$REPO_DIR"
+            git pull origin master
+            log "Syncing configurations..."
+            bash "$SCRIPTS_DIR/install.sh" --skip-pkgs
+        else
+            err "Not a git repository. Cannot update via git."
+        fi
         ;;
     audit)
         log "Auditing system..."
-        # Basic audit logic
         missing=()
+        # Check for core binaries
         for pkg in hyprland waybar kitty wofi dunst; do
             if ! command -v "$pkg" &> /dev/null; then
                 missing+=("$pkg")

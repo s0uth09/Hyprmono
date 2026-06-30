@@ -45,25 +45,29 @@ main() {
         fi
     done
 
-    # Step 2: Clean up old repo if it exists
-    local REPO_DIR="$HOME/Hyprmono"
-    if [[ -d "$REPO_DIR" ]]; then
-        log "Removing old repository directory..."
-        rm -rf "$REPO_DIR"
-        ok "Removed $REPO_DIR"
-    fi
+    # Step 2: Clean up old repo if it exists (check both old and new paths)
+    local OLD_REPO_DIR="$HOME/Hyprmono"
+    local NEW_REPO_DIR="$HOME/.local/share/hyprmono"
+    
+    for dir in "$OLD_REPO_DIR" "$NEW_REPO_DIR"; do
+        if [[ -d "$dir" ]]; then
+            log "Removing repository at $dir..."
+            rm -rf "$dir"
+            ok "Removed $dir"
+        fi
+    done
 
-    # Step 3: Clone fresh repo
-    log "Cloning fresh repository from GitHub..."
-    cd "$HOME"
-    git clone https://github.com/s0uth09/Hyprmono.git
+    # Step 3: Clone fresh repo to the new standard path
+    log "Cloning fresh repository to ~/.local/share/hyprmono..."
+    mkdir -p "$HOME/.local/share"
+    cd "$HOME/.local/share"
+    git clone https://github.com/s0uth09/Hyprmono.git hyprmono
     ok "Repository cloned successfully"
 
-    # Step 4: Run the installer
+    # Step 4: Run the installer from the new path
     log "Starting installation..."
-    cd "$REPO_DIR"
-    chmod +x install.sh
-    bash install.sh
+    cd "$NEW_REPO_DIR"
+    bash scripts/install.sh
 }
 
 main "$@"
