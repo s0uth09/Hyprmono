@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 
-# H Y D E   S H E L L - Hyprmono Development & Resource Assistant
-# Centralized CLI for managing the Hyprmono environment.
+# H Y D E   S H E L L - The Definitive CLI
+# Centralized entry point for the HyprMono environment.
 
 set -Eeuo pipefail
+
+# --- Absolute Path Resolution ---
+REAL_PATH=$(readlink -f "${BASH_SOURCE[0]}")
+SCRIPTS_DIR=$(dirname "$REAL_PATH")
+REPO_DIR=$(cd "$SCRIPTS_DIR/.." && pwd)
 
 # --- Colors ---
 RED="\e[38;5;203m"
@@ -14,76 +19,68 @@ MAGENTA="\e[38;5;213m"
 BOLD="\e[1m"
 RESET="\e[0m"
 
-# --- Config ---
-# The script might be called via a symlink or directly.
-# We want to find the real path of the script to locate the repository.
-REAL_PATH=$(readlink -f "${BASH_SOURCE[0]}")
-REPO_DIR="$(cd "$(dirname "$REAL_PATH")/.." && pwd)"
-SCRIPTS_DIR="$REPO_DIR/scripts"
-
 # --- Helpers ---
 log() { echo -e "${CYAN}hyde >${RESET} $*"; }
 err() { echo -e "${RED}hyde error >${RESET} $*" >&2; }
 
 show_help() {
-    echo -e "${BOLD}${MAGENTA}H Y D E   S H E L L${RESET} - Hyprmono CLI"
+    echo -e "${BOLD}${MAGENTA}H Y D E   S H E L L${RESET} - HyprMono Management"
     echo
-    echo -e "${BOLD}Usage:${RESET} hyde [command] [options]"
+    echo -e "${BOLD}Usage:${RESET} hyde [command]"
     echo
     echo -e "${BOLD}Commands:${RESET}"
-    echo -e "  install     Run the main installation script"
-    echo -e "  reinstall   Completely wipe and reinstall from GitHub"
-    echo -e "  uninstall   Remove all Hyprmono configurations"
-    echo -e "  update      Pull latest changes and sync configs"
-    echo -e "  audit       Perform a system check for Hyprmono dependencies"
-    echo -e "  help        Show this help message"
+    echo -e "  install     Execute the professional installer"
+    echo -e "  reinstall   Wipe and perform a fresh install from GitHub"
+    echo -e "  uninstall   Completely remove all configurations"
+    echo -e "  update      Pull latest repository changes and sync"
+    echo -e "  audit       Verify system dependencies"
+    echo -e "  help        Display this help interface"
     echo
 }
 
 case "${1:-help}" in
     install)
-        log "Launching installer..."
+        log "Initializing Installer..."
         bash "$SCRIPTS_DIR/install.sh"
         ;;
     reinstall)
-        log "Launching reinstaller..."
+        log "Initializing Reinstaller..."
         bash "$SCRIPTS_DIR/reinstall.sh"
         ;;
     uninstall)
-        log "Launching uninstaller..."
+        log "Initializing Uninstaller..."
         bash "$SCRIPTS_DIR/uninstall.sh"
         ;;
     update)
-        log "Updating Hyprmono..."
+        log "Syncing Repository..."
         if [[ -d "$REPO_DIR/.git" ]]; then
             cd "$REPO_DIR"
             git pull origin master
-            log "Syncing configurations..."
+            log "Syncing Configurations..."
             bash "$SCRIPTS_DIR/install.sh" --skip-pkgs
         else
-            err "Not a git repository. Cannot update via git."
+            err "Update failed: Not a git repository."
         fi
         ;;
     audit)
-        log "Auditing system..."
+        log "Running System Audit..."
         missing=()
-        # Check for core binaries
-        for pkg in hyprland waybar kitty wofi dunst; do
-            if ! command -v "$pkg" &> /dev/null; then
-                missing+=("$pkg")
+        for bin in hyprland waybar kitty wofi dunst; do
+            if ! command -v "$bin" &> /dev/null; then
+                missing+=("$bin")
             fi
         done
         if [ ${#missing[@]} -eq 0 ]; then
-            log "${GREEN}System audit passed.${RESET}"
+            log "${GREEN}Audit successful: Core components present.${RESET}"
         else
-            err "Missing core packages: ${missing[*]}"
+            err "Audit failed: Missing components: ${missing[*]}"
         fi
         ;;
     help|--help|-h)
         show_help
         ;;
     *)
-        err "Unknown command: $1"
+        err "Invalid command: $1"
         show_help
         exit 1
         ;;

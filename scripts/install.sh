@@ -1,26 +1,23 @@
 #!/usr/bin/env bash
 
-# H Y P R M O N O - Installation Script
-# Professional installer for the HyprMono environment.
+# H Y P R M O N O - The Definitive Installer
+# Version: 4.0 (Final Rewrite)
+# Purpose: Robust, path-aware installation for the HyprMono environment.
 
 set -Eeuo pipefail
 
-readonly SCRIPT_VERSION="3.2"
-readonly PROJECT="HyprMono"
-readonly GITHUB_REPO="https://github.com/s0uth09/Hyprmono.git"
+# --- Absolute Path Resolution ---
+# This ensures the script knows where it is, regardless of how it was called.
+REAL_PATH=$(readlink -f "${BASH_SOURCE[0]}")
+SCRIPTS_DIR=$(dirname "$REAL_PATH")
+DOTS=$(cd "$SCRIPTS_DIR/.." && pwd)
 
-# --- Paths ---
-# Since install.sh is now in scripts/, DOTS should be the parent directory
-DOTS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# --- Configuration ---
+readonly PROJECT="HyprMono"
 CONFIG_DIR="$HOME/.config"
 LOCAL_BIN="$HOME/.local/bin"
 LOGFILE="$DOTS/install.log"
-
-# --- Repository Placement ---
-# We want the repository to live in ~/.local/share/hyprmono
 TARGET_REPO_DIR="$HOME/.local/share/hyprmono"
-
-DRY_RUN=false
 
 # --- Colors ---
 RESET="\e[0m"
@@ -56,7 +53,7 @@ ask() {
     [[ "$response" =~ ^[Yy]$ ]]
 }
 
-# --- Packages ---
+# --- Package Management ---
 PACMAN_PACKAGES=(
     hyprland hyprlock hyprpaper hypridle waybar kitty wofi rofi-wayland fuzzel
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
@@ -67,9 +64,9 @@ PACMAN_PACKAGES=(
 )
 
 install_packages() {
-    title "Installing packages"
+    title "Package Check"
     if ! has pacman; then
-        err "Pacman not found. This script is for Arch-based systems."
+        err "Pacman not found. This script requires an Arch-based system."
         exit 1
     fi
 
@@ -80,47 +77,45 @@ install_packages() {
 
     if (( ${#missing[@]} > 0 )); then
         warn "Missing packages: ${missing[*]}"
-        if ask "Install missing packages?" y; then
+        if ask "Install missing dependencies?" y; then
             sudo pacman -S --needed --noconfirm "${missing[@]}"
         fi
     else
-        ok "All packages are already installed."
+        ok "All dependencies met."
     fi
 }
 
-# --- Config Installation ---
-install_all_configs() {
-    title "Installing configurations"
+# --- Core Installation ---
+install_configs() {
+    title "Configuration Deployment"
 
     if [[ ! -d "$DOTS/config" ]]; then
-        err "Config directory not found at: $DOTS/config"
+        err "Critical Failure: Config directory not found at $DOTS/config"
         exit 1
     fi
 
-    log "Backing up existing configs..."
+    log "Starting backup..."
     local backup_dir="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
     mkdir -p "$backup_dir"
 
-    # Iterate through folders in repo's config directory
+    # Deploy application configs
     for folder_path in "$DOTS/config"/*; do
         if [[ -d "$folder_path" ]]; then
             local folder_name=$(basename "$folder_path")
             
-            # Backup if exists
             if [[ -d "$CONFIG_DIR/$folder_name" ]]; then
                 cp -r "$CONFIG_DIR/$folder_name" "$backup_dir/"
                 log "Backed up $folder_name"
             fi
             
-            # Install new config
             mkdir -p "$CONFIG_DIR/$folder_name"
             cp -r "$folder_path/"* "$CONFIG_DIR/$folder_name/"
-            ok "Installed $folder_name configuration"
+            ok "Deployed $folder_name"
         fi
     done
 
-    # Install scripts
-    title "Installing scripts"
+    # Deploy scripts to ~/.local/bin
+    title "Script Deployment"
     mkdir -p "$LOCAL_BIN"
     for script in "$DOTS/scripts"/*.sh; do
         if [[ -f "$script" ]]; then
@@ -131,103 +126,64 @@ install_all_configs() {
         fi
     done
 
-    # Create the 'hyde' symlink for the main CLI
+    # Create 'hyde' command symlink
     if [[ -f "$LOCAL_BIN/hyde-shell.sh" ]]; then
         ln -sf "$LOCAL_BIN/hyde-shell.sh" "$LOCAL_BIN/hyde"
-        ok "Created 'hyde' command in $LOCAL_BIN"
+        ok "Linked 'hyde' command"
     fi
 
-    # Install assets
-    title "Installing assets"
+    # Deploy assets
+    title "Asset Deployment"
     if [[ -d "$DOTS/assets" ]]; then
         mkdir -p "$CONFIG_DIR/hypr/assets"
         cp -r "$DOTS/assets/"* "$CONFIG_DIR/hypr/assets/"
-        ok "Installed assets to $CONFIG_DIR/hypr/assets"
+        ok "Deployed assets to $CONFIG_DIR/hypr/assets"
 
-        # Fonts
+        # Install fonts
         if [[ -d "$DOTS/assets/fonts" ]]; then
-            info "Installing custom fonts..."
+            info "Updating font cache..."
             mkdir -p "$HOME/.local/share/fonts"
             cp "$DOTS/assets/fonts"/*.otf "$HOME/.local/share/fonts/" 2>/dev/null || true
             cp "$DOTS/assets/fonts"/*.ttf "$HOME/.local/share/fonts/" 2>/dev/null || true
             fc-cache -f
-            ok "Fonts installed and cache updated"
+            ok "Fonts installed successfully."
         fi
     fi
-}
-
-# --- GitHub Integration ---
-sync_repo() {
-    title "Syncing with GitHub"
-    if [[ -d "$DOTS/.git" ]]; then
-        info "Local repository detected. Pulling latest changes..."
-        cd "$DOTS"
-        git pull origin master
-        ok "Repository synced."
-    else
-        warn "Not a git repository. Skipping sync."
-    fi
-}
-
-banner() {
-    clear
-    echo -e "${LIGHT}${BOLD}HyprMono Installation Script v${SCRIPT_VERSION}${RESET}"
-    line
 }
 
 main() {
-    banner
+    clear
+    echo -e "${LIGHT}${BOLD}HyprMono Installation Framework v${SCRIPT_VERSION}${RESET}"
+    line
+
     if [[ $EUID -eq 0 ]]; then
-        err "Do NOT run this script as root."
+        err "Safety Check: Do NOT run as root."
         exit 1
     fi
 
-    sudo -v || { err "Sudo authentication failed"; exit 1; }
+    sudo -v || { err "Sudo authentication failed."; exit 1; }
 
-    # Ensure repository is in the correct location (~/.local/share/hyprmono)
+    # Path enforcement
     if [[ "$DOTS" != "$TARGET_REPO_DIR" ]]; then
-        info "Moving repository to $TARGET_REPO_DIR..."
-        mkdir -p "$HOME/.local/share"
-        # If the target exists, we might want to back it up or just merge
-        if [[ -d "$TARGET_REPO_DIR" && "$DOTS" != "$TARGET_REPO_DIR" ]]; then
-            warn "Target directory $TARGET_REPO_DIR already exists."
+        warn "Repository is at $DOTS instead of $TARGET_REPO_DIR"
+        if ask "Migrate repository to standard location?" y; then
+            mkdir -p "$TARGET_REPO_DIR"
+            cp -r "$DOTS/"* "$TARGET_REPO_DIR/"
+            ok "Migration complete."
+            info "Please run: cd $TARGET_REPO_DIR && ./hyde install"
+            exit 0
         fi
-        
-        # We don't move 'DOTS' while running from it, but we can copy and advise
-        cp -r "$DOTS" "$TARGET_REPO_DIR"
-        ok "Repository copied to $TARGET_REPO_DIR"
-        info "Please run the installer from the new location: cd $TARGET_REPO_DIR && bash scripts/install.sh"
-        # If we are in the middle of an install, we continue but warn
-    fi
-
-    if ask "Sync with GitHub repository before installing?" y; then
-        sync_repo
     fi
 
     install_packages
     
-    if ask "Install all configurations and scripts?" y; then
-        install_all_configs
+    if ask "Proceed with configuration deployment?" y; then
+        install_configs
     fi
 
-    title "Installation Finished"
-    echo "Next steps:"
-    echo "  1. Reboot your system."
-    echo "  2. Select Hyprland session at login."
-    echo
-    ok "Enjoy your new setup!"
+    title "Success"
+    ok "HyprMono has been successfully deployed."
+    echo -e "Next Steps:\n  1. Reboot.\n  2. Select Hyprland.\n  3. Use 'hyde' to manage your setup."
 }
-
-# Simple argument parsing
-if [[ "${1:-}" == "--skip-pkgs" ]]; then
-    # Helper for fast updates
-    main_fast() {
-        banner
-        install_all_configs
-        ok "Fast update complete!"
-    }
-    main_fast
-    exit 0
-fi
 
 main "$@"
