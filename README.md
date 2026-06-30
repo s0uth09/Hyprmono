@@ -27,6 +27,10 @@ HyprMono is built on the principle of **visual silence**. By stripping away colo
 | **Wofi / Rofi** | Unified application launchers and window switchers. |
 | **Dunst / SwayNC** | Ported notification systems for seamless visual integration. |
 | **Fuzzel** | Compact launcher with an integrated monochrome emoji picker. |
+| **Vim** | Monochrome color scheme for the Vim text editor. |
+| **Fish** | Clean and functional shell configuration. |
+| **Fastfetch** | System information tool with monochrome output. |
+| **Wlogout** | Monochrome logout menu. |
 
 ---
 
@@ -39,9 +43,9 @@ Ensure you have the following packages installed (Arch Linux / Pacman):
 sudo pacman -S --needed \
     hyprland hyprpaper hypridle hyprlock \
     waybar kitty wofi rofi-wayland fuzzel \
-    dunst swaynotificationcenter \
+    dunst swaynotificationcenter swaylock \
     ttf-jetbrains-mono-nerd noto-fonts-emoji \
-    brightnessctl playerctl
+    brightnessctl playerctl fish fastfetch wlogout
 ```
 
 ### 2. Setup
@@ -74,7 +78,7 @@ The installer will automatically handle backups of your existing configurations 
 
 ## ◈ Customization
 
-All configuration files are now in native formats (no Lua dependencies). You can find the main variables in:
+All configuration files are now in native `.conf` formats (no Lua dependencies). You can find the main variables in:
 `~/.config/hypr/hyprland/variables.conf`
 
 To change the monochrome palette, simply update the hex values in that file and reload Hyprland with `Super + Shift + R`.
