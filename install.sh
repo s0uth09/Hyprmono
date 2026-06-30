@@ -454,24 +454,8 @@ install_hyprland() {
 
     mkdir -p ~/.config/hypr
 
-    cat > ~/.config/hypr/hyprland.conf <<EOF
-# Basic Hyprland config
-monitor=,preferred,auto,1
-exec-once = waybar &
-exec-once = nm-applet &
-exec-once = polkit-kde-authentication-agent-1
-
-input {
-    kb_layout = pl
-    follow_mouse = 1
-}
-
-general {
-    gaps_in = 5
-    gaps_out = 10
-    border_size = 2
-}
-EOF
+    cp -r "$DOTS/config/hypr/"* ~/.config/hypr/
+    log "Hyprland config files copied from repository"
     log "Hyprland installed"
 }
 
@@ -729,20 +713,8 @@ main() {
     check_system
     backup_configs
     validate_repo
-   detect_package_manager() {
-    local pm="unknown"
-
-    for cmd in pacman apt dnf yum zypper; do
-        if command -v "$cmd" >/dev/null 2>&1; then
-            pm="$cmd"
-            break
-        fi
-    done
-
-    echo "$pm"
-
-    [[ "$pm" == "unknown" ]] && return 1
-}
+    # Nested definition removed as it shadowed the top-level definition.
+    # detect_package_manager is called as needed.
     install_packages
     select_components
     build_queue
