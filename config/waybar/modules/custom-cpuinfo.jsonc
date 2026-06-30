@@ -1,6 +1,6 @@
 {
   "custom/cpuinfo": {
-    "exec": "hyde-shell cpuinfo",
+    "exec": "cpuinfo",
     "return-type": "json",
     "format": "{0}",
     "rotate": 0,

@@ -1,6 +1,8 @@
-" Load the hyde config
+" Load custom colors
 let s:VIM_DIR = fnamemodify($MYVIMRC, ':h')
-execute 'source ' . s:VIM_DIR . '/hyde.vim'
+if filereadable(s:VIM_DIR . '/colors/wallbash.vim')
+    colorscheme wallbash
+endif
 
 " Adding your custom colorschem
 "colorscheme zaibatsu "the only nice built-in colorscheme 

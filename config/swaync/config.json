@@ -69,11 +69,11 @@
         },
         {
           "label": "  󰃛  ",
-          "command": " hyde-shell hyprsunset --toggle"
+          "command": " hyprsunset --toggle"
         },
         {
           "label": "  ⏻  ",
-          "command": "hyde-shell logoutlaunch"
+          "command": "logoutlaunch"
         }
       ]
     }
