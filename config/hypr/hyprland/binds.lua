@@ -2,10 +2,10 @@ local menu    = "wofi --show drun"
 local mainMod = "SUPER"
 
 -- Apps
-hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
-hl.bind(mainMod .. " + E",      hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + B",      hl.dsp.exec_cmd(browser))
-hl.bind(mainMod .. " + R",      hl.dsp.exec_cmd(menu))
+hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd("kitty"))
+hl.bind(mainMod .. " + E",      hl.dsp.exec_cmd("thunar"))
+hl.bind(mainMod .. " + B",      hl.dsp.exec_cmd("firefox"))
+hl.bind(mainMod .. " + R",      hl.dsp.exec_cmd("wofi --show drun"))
 
 -- Window management
 hl.bind("ALT + F4",             hl.dsp.window.close())
