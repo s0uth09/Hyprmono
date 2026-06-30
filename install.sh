@@ -151,6 +151,14 @@ install_all_configs() {
             fi
         done
     fi
+
+    # Install assets (wallpapers, sounds)
+    title "Installing assets"
+    if [[ -d "$DOTS/assets" ]]; then
+        mkdir -p "$CONFIG_DIR/hypr/assets"
+        cp -r "$DOTS/assets/"* "$CONFIG_DIR/hypr/assets/"
+        ok "Installed assets to $CONFIG_DIR/hypr/assets"
+    fi
 }
 
 
