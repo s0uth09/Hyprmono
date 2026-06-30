@@ -8,15 +8,15 @@
 
 ---
 
-```text
-# ---------------------------------------------------
-#  P A L E T T E
-# ---------------------------------------------------
-#  BACKGROUND  #000000    FOREGROUND  #FFFFFF
-#  SURFACE     #111111    BORDER      #444444
-#  ACCENT      #CCCCCC    ACTIVE      #FFFFFF
-# ---------------------------------------------------
-```
+## ◈ Palette
+
+| Role | Color | Hex Code |
+| :--- | :---: | :--- |
+| **Background** | <img src="https://placehold.co/15x15/000000/000000.png" width="15" height="15" /> | `#000000` |
+| **Surface** | <img src="https://placehold.co/15x15/111111/111111.png" width="15" height="15" /> | `#111111` |
+| **Border** | <img src="https://placehold.co/15x15/444444/444444.png" width="15" height="15" /> | `#444444` |
+| **Accent** | <img src="https://placehold.co/15x15/cccccc/cccccc.png" width="15" height="15" /> | `#CCCCCC` |
+| **Foreground / Active** | <img src="https://placehold.co/15x15/ffffff/ffffff.png" width="15" height="15" /> | `#FFFFFF` |
 
 ---
 
@@ -98,9 +98,43 @@ The configuration has been refactored for maximum modularity. You can find the m
 
 To change the monochrome palette, simply update the hex values in `variables.conf` and reload Hyprland with `Super + Shift + R`.
 
+### File Tree
+
+```text
+.
+├── config/
+│   ├── dunst/
+│   ├── fastfetch/
+│   ├── fish/
+│   ├── fontconfig/
+│   ├── fuzzel/
+│   ├── hypr/
+│   │   ├── hyprland/
+│   │   │   ├── binds/
+│   │   │   ├── general/
+│   │   │   └── ...
+│   │   ├── hyprlock/
+│   │   │   └── widgets/
+│   │   └── hyprpaper/
+│   ├── kde-material-you-colors/
+│   ├── kitty/
+│   ├── rofi/
+│   ├── swaylock/
+│   ├── swaync/
+│   ├── vim/
+│   ├── waybar/
+│   ├── wlogout/
+│   ├── wofi/
+│   └── xdg-desktop-portal/
+├── scripts/
+├── install.sh
+├── reinstall.sh
+└── uninstall.sh
+```
+
 ---
 
-## ◈ Uninstallation
+## ◈ Uninstallation & Reinstallation
 
 To safely remove the configuration and restore your previous setup:
 
@@ -108,8 +142,15 @@ To safely remove the configuration and restore your previous setup:
 bash ~/.local/bin/uninstall.sh
 ```
 
+If you wish to completely wipe your local configs and reinstall a fresh copy from GitHub:
+
+```bash
+bash reinstall.sh
+```
+
 ---
 
 ## ◈ License
 
-This project is open-source and available under the MIT License.
+This project is open-source and available under the [MIT License](LICENSE).
+Copyright (c) 2025 s0uth09.
