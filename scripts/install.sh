@@ -152,12 +152,22 @@ install_all_configs() {
         done
     fi
 
-    # Install assets (wallpapers, sounds)
+    # Install assets (wallpapers, sounds, fonts)
     title "Installing assets"
     if [[ -d "$DOTS/assets" ]]; then
         mkdir -p "$CONFIG_DIR/hypr/assets"
         cp -r "$DOTS/assets/"* "$CONFIG_DIR/hypr/assets/"
         ok "Installed assets to $CONFIG_DIR/hypr/assets"
+
+        # Special handling for fonts
+        if [[ -d "$DOTS/assets/fonts" ]]; then
+            info "Installing custom fonts..."
+            mkdir -p "$HOME/.local/share/fonts"
+            cp "$DOTS/assets/fonts"/*.otf "$HOME/.local/share/fonts/" 2>/dev/null || true
+            cp "$DOTS/assets/fonts"/*.ttf "$HOME/.local/share/fonts/" 2>/dev/null || true
+            fc-cache -f
+            ok "Fonts installed and cache updated"
+        fi
     fi
 }
 
