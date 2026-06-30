@@ -1,8 +1,14 @@
-#!/bin/env bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-MAIN_KB_CAPS=$(hyprctl devices | grep -B 6 "main: yes" | grep "capsLock" | head -1 | awk '{print $2}')
+if ! command -v hyprctl >/dev/null 2>&1; then
+    echo ""
+    exit 0
+fi
 
-if [ "$MAIN_KB_CAPS" = "yes" ]; then
+main_kb_caps=$(hyprctl devices 2>/dev/null | awk '/main: yes/ { main=1; next } main && /capsLock/ { print $2; exit }' || true)
+
+if [[ "$main_kb_caps" == "yes" ]]; then
     echo "Caps Lock active"
 else
     echo ""

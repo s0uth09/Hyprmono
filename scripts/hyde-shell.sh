@@ -8,7 +8,28 @@ set -Eeuo pipefail
 # --- Absolute Path Resolution ---
 REAL_PATH=$(readlink -f "${BASH_SOURCE[0]}")
 SCRIPTS_DIR=$(dirname "$REAL_PATH")
-REPO_DIR=$(cd "$SCRIPTS_DIR/.." && pwd)
+STANDARD_REPO_DIR="$HOME/.local/share/hyprmono"
+
+resolve_repo_dir() {
+    local candidates=(
+        "${HYPRMONO_REPO:-}"
+        "$STANDARD_REPO_DIR"
+        "$(cd "$SCRIPTS_DIR/.." && pwd)"
+    )
+
+    local candidate
+    for candidate in "${candidates[@]}"; do
+        [[ -n "$candidate" ]] || continue
+        if [[ -d "$candidate/.git" && -d "$candidate/scripts" && -d "$candidate/config" ]]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+REPO_DIR=$(resolve_repo_dir || true)
 
 # --- Colors ---
 RED="\e[38;5;203m"
@@ -22,6 +43,20 @@ RESET="\e[0m"
 # --- Helpers ---
 log() { echo -e "${CYAN}hyde >${RESET} $*"; }
 err() { echo -e "${RED}hyde error >${RESET} $*" >&2; }
+
+run_repo_script() {
+    local script_name="$1"
+    shift
+
+    if [[ -n "$REPO_DIR" && -x "$REPO_DIR/scripts/$script_name" ]]; then
+        bash "$REPO_DIR/scripts/$script_name" "$@"
+    elif [[ -f "$SCRIPTS_DIR/$script_name" ]]; then
+        bash "$SCRIPTS_DIR/$script_name" "$@"
+    else
+        err "Unable to locate $script_name. Set HYPRMONO_REPO to your HyprMono checkout."
+        exit 1
+    fi
+}
 
 show_help() {
     echo -e "${BOLD}${MAGENTA}H Y D E   S H E L L${RESET} - HyprMono Management"
@@ -41,23 +76,24 @@ show_help() {
 case "${1:-help}" in
     install)
         log "Initializing Installer..."
-        bash "$SCRIPTS_DIR/install.sh"
+        run_repo_script install.sh
         ;;
     reinstall)
         log "Initializing Reinstaller..."
-        bash "$SCRIPTS_DIR/reinstall.sh"
+        run_repo_script reinstall.sh
         ;;
     uninstall)
         log "Initializing Uninstaller..."
-        bash "$SCRIPTS_DIR/uninstall.sh"
+        run_repo_script uninstall.sh
         ;;
     update)
         log "Syncing Repository..."
-        if [[ -d "$REPO_DIR/.git" ]]; then
+        if [[ -n "$REPO_DIR" && -d "$REPO_DIR/.git" ]]; then
             cd "$REPO_DIR"
-            git pull origin master
+            branch=$(git symbolic-ref --short HEAD 2>/dev/null || printf 'master')
+            git pull --ff-only origin "$branch"
             log "Syncing Configurations..."
-            bash "$SCRIPTS_DIR/install.sh" --skip-pkgs
+            bash "$REPO_DIR/scripts/install.sh" --skip-pkgs --yes --no-migrate
         else
             err "Update failed: Not a git repository."
         fi
