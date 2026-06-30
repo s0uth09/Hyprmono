@@ -41,6 +41,10 @@ window#waybar {
 #pulseaudio,
 #wireplumber,
 #custom-media,
+#custom-cpuinfo,
+#custom-gpuinfo,
+#custom-swaync,
+#privacy,
 #tray,
 #mode,
 #idle_inhibitor,
@@ -52,4 +56,23 @@ window#waybar {
 
 #tray {
     padding-right: 15px;
+}
+
+#taskbar button {
+    padding: 0 5px;
+    background: transparent;
+    color: @main-fg;
+}
+
+#taskbar button.active {
+    background: @wb-act-bg;
+    color: @wb-act-fg;
+}
+
+#custom-swaync {
+    padding: 0 12px;
+}
+
+#privacy {
+    padding: 0 8px;
 }

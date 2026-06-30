@@ -84,10 +84,12 @@ run() {
 ###############################################################################
 
 PACMAN_PACKAGES=(
-    hyprland hyprlock hyprpaper waybar kitty wofi rofi fuzzel
+    hyprland hyprlock hyprpaper hypridle waybar kitty wofi rofi fuzzel
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
-    nm-applet brightnessctl playerctl wpctl
+    nm-applet brightnessctl playerctl wireplumber pipewire-pulse
+    swaynotificationcenter dunst wlogout swaylock-effects
+    fish fastfetch
 )
 
 install_packages() {

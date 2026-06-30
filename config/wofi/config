@@ -17,6 +17,6 @@ dynamic_lines=false
 lines=10
 columns=1
 term=kitty
-color=.config/wofi/colors
+color=$HOME/.config/wofi/colours
 key_up=Control_L-p
 key_down=Control_L-n

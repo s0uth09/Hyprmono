@@ -7,7 +7,7 @@ set -Eeuo pipefail
 
 # --- Configuration ---
 CONFIG_DIR="$HOME/.config"
-TARGETS=(hypr kitty wofi rofi fuzzel waybar swaylock swaync dunst fastfetch fish vim)
+TARGETS=(hypr kitty wofi rofi fuzzel waybar swaylock swaync dunst fastfetch fish vim wlogout fontconfig xdg-desktop-portal kde-material-you-colors)
 BACKUP_PREFIX=".config-backup-"
 
 # --- Colors ---

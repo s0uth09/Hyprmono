@@ -1,18 +1,28 @@
-# HyprMono
+<div align="center">
+  <h1 align="center">H Y P R M O N O</h1>
+  <p align="center">
+    <b>A refined, high-contrast monochrome Hyprland configuration.</b><br>
+    <i>Designed for minimalism, modularity, consistency, and performance.</i>
+  </p>
+</div>
 
-A refined, high-contrast monochrome Hyprland configuration. Designed for minimalism, consistency, and performance.
+---
 
 ```text
-BACKGROUND  #000000    FOREGROUND  #FFFFFF
-SURFACE     #111111    BORDER      #444444
-ACCENT      #CCCCCC    ACTIVE      #FFFFFF
+# ---------------------------------------------------
+#  P A L E T T E
+# ---------------------------------------------------
+#  BACKGROUND  #000000    FOREGROUND  #FFFFFF
+#  SURFACE     #111111    BORDER      #444444
+#  ACCENT      #CCCCCC    ACTIVE      #FFFFFF
+# ---------------------------------------------------
 ```
 
 ---
 
 ## ◈ Design Philosophy
 
-HyprMono is built on the principle of **visual silence**. By stripping away color, the interface becomes a neutral canvas that prioritizes content and focus. Every component—from the status bar to the notification daemon—has been meticulously audited to ensure a perfect grayscale aesthetic.
+HyprMono is built on the principle of **visual silence**. By stripping away color, the interface becomes a neutral canvas that prioritizes content and focus. Every component—from the status bar to the notification daemon—has been meticulously audited and modularized to ensure a perfect grayscale aesthetic.
 
 ---
 
@@ -20,7 +30,7 @@ HyprMono is built on the principle of **visual silence**. By stripping away colo
 
 | Component | Description |
 | :--- | :--- |
-| **Hyprland** | Native `.conf` based tiling compositor configuration. |
+| **Hyprland** | Native `.conf` based tiling compositor configuration, heavily modularized. |
 | **Waybar** | Minimalist status bar with custom monochrome modules. |
 | **Hyprlock** | Clean, high-contrast lock screen with JetBrains Mono typography. |
 | **Kitty** | GPU-accelerated terminal with a custom grayscale theme. |
@@ -41,11 +51,12 @@ Ensure you have the following packages installed (Arch Linux / Pacman):
 
 ```bash
 sudo pacman -S --needed \
-    hyprland hyprpaper hypridle hyprlock \
-    waybar kitty wofi rofi-wayland fuzzel \
-    dunst swaynotificationcenter swaylock \
-    ttf-jetbrains-mono-nerd noto-fonts-emoji \
-    brightnessctl playerctl fish fastfetch wlogout
+    hyprland hyprpaper hypridle waybar kitty wofi rofi-wayland fuzzel \
+    xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent \
+    ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji \
+    nm-applet brightnessctl playerctl wireplumber pipewire-pulse \
+    swaynotificationcenter dunst wlogout swaylock-effects \
+    fish fastfetch
 ```
 
 ### 2. Setup
@@ -76,12 +87,16 @@ The installer will automatically handle backups of your existing configurations 
 
 ---
 
-## ◈ Customization
+## ◈ Configuration Structure
 
-All configuration files are now in native `.conf` formats (no Lua dependencies). You can find the main variables in:
-`~/.config/hypr/hyprland/variables.conf`
+The configuration has been refactored for maximum modularity. You can find the main entry points here:
 
-To change the monochrome palette, simply update the hex values in that file and reload Hyprland with `Super + Shift + R`.
+- **Hyprland Variables:** `~/.config/hypr/hyprland/variables.conf`
+- **Keybinds:** `~/.config/hypr/hyprland/binds/` (Split into apps, media, windows, workspaces)
+- **General Settings:** `~/.config/hypr/hyprland/general/`
+- **Kitty Settings:** `~/.config/kitty/` (Split into font, keybinds, appearance, theme)
+
+To change the monochrome palette, simply update the hex values in `variables.conf` and reload Hyprland with `Super + Shift + R`.
 
 ---
 
@@ -96,4 +111,5 @@ bash ~/.local/bin/uninstall.sh
 ---
 
 ## ◈ License
+
 This project is open-source and available under the MIT License.
