@@ -3,7 +3,7 @@
     font-size: ${fntSize}px;
 }
 
-@import "$HOME/.config/waybar/theme.css";
+@import "~/.config/waybar/theme.css";
 
 window {
     background-color: transparent;
@@ -58,25 +58,25 @@ button:hover#reboot {
 }
 
 #lock {
-    background-image: image(url("$HOME/.config/wlogout/icons/lock_${BtnCol}.png"), url("/usr/share/wlogout/icons/lock.png"), url("/usr/local/share/wlogout/icons/lock.png"));
+    background-image: image(url("~/.config/wlogout/icons/lock_${BtnCol}.png"), url("/usr/share/wlogout/icons/lock.png"), url("/usr/local/share/wlogout/icons/lock.png"));
     border-radius: ${button_rad}px 0px 0px 0px;
     margin : ${y_mgn}px 0px 0px ${x_mgn}px;
 }
 
 #logout {
-    background-image: image(url("$HOME/.config/wlogout/icons/logout_${BtnCol}.png"), url("/usr/share/wlogout/icons/logout.png"), url("/usr/local/share/wlogout/icons/logout.png"));
+    background-image: image(url("~/.config/wlogout/icons/logout_${BtnCol}.png"), url("/usr/share/wlogout/icons/logout.png"), url("/usr/local/share/wlogout/icons/logout.png"));
     border-radius: 0px 0px 0px ${button_rad}px;
     margin : 0px 0px ${y_mgn}px ${x_mgn}px;
 }
 
 #shutdown {
-    background-image: image(url("$HOME/.config/wlogout/icons/shutdown_${BtnCol}.png"), url("/usr/share/wlogout/icons/shutdown.png"), url("/usr/local/share/wlogout/icons/shutdown.png"));
+    background-image: image(url("~/.config/wlogout/icons/shutdown_${BtnCol}.png"), url("/usr/share/wlogout/icons/shutdown.png"), url("/usr/local/share/wlogout/icons/shutdown.png"));
     border-radius: 0px ${button_rad}px 0px 0px;
     margin : ${y_mgn}px ${x_mgn}px 0px 0px;
 }
 
 #reboot {
-    background-image: image(url("$HOME/.config/wlogout/icons/reboot_${BtnCol}.png"), url("/usr/share/wlogout/icons/reboot.png"), url("/usr/local/share/wlogout/icons/reboot.png"));
+    background-image: image(url("~/.config/wlogout/icons/reboot_${BtnCol}.png"), url("/usr/share/wlogout/icons/reboot.png"), url("/usr/local/share/wlogout/icons/reboot.png"));
     border-radius: 0px 0px ${button_rad}px 0px;
     margin : 0px ${x_mgn}px ${y_mgn}px 0px;
 }

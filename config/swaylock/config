@@ -1,34 +1,47 @@
+# Swaylock Monochrome Configuration
 daemonize
 show-failed-attempts
 clock
 screenshot
 effect-blur=15x15
 effect-vignette=1:1
-color=1f1d2e80
-font="Inter"
+color=11111180
+font="JetBrainsMono Nerd Font"
 indicator
 indicator-radius=200
 indicator-thickness=20
-line-color=1f1d2e
-ring-color=191724
-inside-color=1f1d2e
-key-hl-color=eb6f92
+
+# Palette
+$bg = 111111
+$fg = eeeeee
+$gray = 444444
+$white = ffffff
+$mid = 888888
+
+line-color=$bg
+ring-color=$gray
+inside-color=$bg
+key-hl-color=$white
 separator-color=00000000
-text-color=e0def4
+text-color=$fg
 text-caps-lock-color=""
-line-ver-color=eb6f92
-ring-ver-color=eb6f92
-inside-ver-color=1f1d2e
-text-ver-color=e0def4
-ring-wrong-color=31748f
-text-wrong-color=31748f
-inside-wrong-color=1f1d2e
-inside-clear-color=1f1d2e
-text-clear-color=e0def4
-ring-clear-color=9ccfd8
-line-clear-color=1f1d2e
-line-wrong-color=1f1d2e
-bs-hl-color=31748f
+
+line-ver-color=$white
+ring-ver-color=$white
+inside-ver-color=$bg
+text-ver-color=$fg
+
+ring-wrong-color=$mid
+text-wrong-color=$mid
+inside-wrong-color=$bg
+
+inside-clear-color=$bg
+text-clear-color=$fg
+ring-clear-color=$mid
+line-clear-color=$bg
+line-wrong-color=$bg
+bs-hl-color=$mid
+
 grace=2
 grace-no-mouse
 grace-no-touch
