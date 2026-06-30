@@ -153,7 +153,7 @@ install_configs() {
 
 main() {
     clear
-    echo -e "${LIGHT}${BOLD}HyprMono Installation Framework v${SCRIPT_VERSION}${RESET}"
+    echo -e "${LIGHT}${BOLD}HyprMono Installation Framework${RESET}"
     line
 
     if [[ $EUID -eq 0 ]]; then
