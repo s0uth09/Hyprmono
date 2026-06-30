@@ -1,29 +1,27 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-############ Variables ############
-enable_battery=false
-battery_charging=false
-
-####### Check availability ########
-for battery in /sys/class/power_supply/*BAT*; do
-  if [[ -f "$battery/uevent" ]]; then
-    enable_battery=true
-    if [[ $(cat /sys/class/power_supply/*/status | head -1) == "Charging" ]]; then
-      battery_charging=true
-    fi
+battery_dir=""
+for candidate in /sys/class/power_supply/*BAT*; do
+  if [[ -r "$candidate/status" && -r "$candidate/capacity" ]]; then
+    battery_dir="$candidate"
     break
   fi
 done
 
-############# Output #############
-if [[ $enable_battery == true ]]; then
-  if [[ $battery_charging == true ]]; then
-    echo -n "(+) "
+if [[ -n "$battery_dir" ]]; then
+  status=$(< "$battery_dir/status")
+  capacity=$(< "$battery_dir/capacity")
+
+  if [[ "$status" == "Charging" ]]; then
+    printf '(+) '
   fi
-  echo -n "$(cat /sys/class/power_supply/*/capacity | head -1)"%
-  if [[ $battery_charging == false ]]; then
-    echo -n " remaining"
+
+  printf '%s%%' "$capacity"
+
+  if [[ "$status" != "Charging" ]]; then
+    printf ' remaining'
   fi
 fi
 
-echo ''
+printf '\n'
