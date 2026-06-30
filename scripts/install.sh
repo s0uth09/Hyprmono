@@ -36,7 +36,13 @@ WIDTH=$(tput cols 2>/dev/null || echo 80)
 
 # --- Helpers ---
 log() { printf "[%s] %s\n" "$(date '+%H:%M:%S')" "$*" >> "$LOGFILE"; }
-line() { printf "%b" "${GRAY}"; printf '─%.0s' $(seq 1 "$WIDTH"); printf "%b\n" "${RESET}"; }
+line() {
+    printf "%b" "${GRAY}"
+    for ((i = 0; i < WIDTH; i++)); do
+        printf '─'
+    done
+    printf "%b\n" "${RESET}"
+}
 title() { echo; echo -e "${BOLD}${LIGHT}$*${RESET}"; line; }
 ok() { echo -e "${GREEN}✓${RESET} $*"; log "[ OK ] $*"; }
 warn() { echo -e "${YELLOW}!${RESET} $*"; log "[WARN] $*"; }
@@ -156,7 +162,7 @@ install_configs() {
             folder_name=$(basename "$folder_path")
             
             if [[ -d "$CONFIG_DIR/$folder_name" ]]; then
-                cp -r "$CONFIG_DIR/$folder_name" "$backup_dir/"
+                cp -a "$CONFIG_DIR/$folder_name" "$backup_dir/"
                 log "Backed up $folder_name"
             fi
             

@@ -1,27 +1,61 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-MODE="${1:-type}"
+mode="${1:-type}"
 
-emoji="$(sed '1,/^### DATA ###$/d' "$0" | fuzzel --match-mode fzf --dmenu | cut -d ' ' -f 1 | tr -d '\n')"
+usage() {
+    printf 'Usage: %s [type|copy|both]\n' "$0" >&2
+}
 
-case "$MODE" in
-    type)
-        wtype "${emoji}" || wl-copy "${emoji}"
-        ;;
-    copy)
-        wl-copy "${emoji}"
-        ;;
-    both)
-        wtype "${emoji}" || true
-        wl-copy "${emoji}"
-        ;;
-    *)
-        echo "Usage: $0 [type|copy|both]"
+require_command() {
+    if ! command -v "$1" >/dev/null 2>&1; then
+        printf 'fuzzel-emojis: required command not found: %s\n' "$1" >&2
         exit 1
+    fi
+}
+
+case "$mode" in
+    type|copy|both) ;;
+    *)
+        usage
+        exit 2
         ;;
 esac
-exit
+
+require_command fuzzel
+if [[ "$mode" == "copy" ]]; then
+    require_command wl-copy
+elif [[ "$mode" == "type" ]]; then
+    command -v wtype >/dev/null 2>&1 || require_command wl-copy
+else
+    require_command wl-copy
+fi
+
+selection=$(sed '1,/^### DATA ###$/d' "$0" | fuzzel --match-mode fzf --dmenu || true)
+emoji=$(printf '%s' "$selection" | awk 'NF { print $1; exit }')
+
+[[ -n "$emoji" ]] || exit 0
+
+case "$mode" in
+    type)
+        if command -v wtype >/dev/null 2>&1; then
+            wtype "$emoji" || wl-copy "$emoji"
+        else
+            wl-copy "$emoji"
+        fi
+        ;;
+    copy)
+        wl-copy "$emoji"
+        ;;
+    both)
+        if command -v wtype >/dev/null 2>&1; then
+            wtype "$emoji" || true
+        fi
+        wl-copy "$emoji"
+        ;;
+esac
+
+exit 0
 ### DATA ###
 😀 grinning face face smile happy joy :D grin
 😃 grinning face with big eyes face happy joy haha :D :) smile funny
