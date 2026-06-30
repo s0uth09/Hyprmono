@@ -1,0 +1,49 @@
+/* SwayNC Monochrome Theme */
+@define-color bg-color #111111;
+@define-color fg-color #eeeeee;
+@define-color text-color #eeeeee;
+@define-color selected-bg-color #333333;
+@define-color selected-fg-color #ffffff;
+@define-color border-color #444444;
+
+* {
+    font-family: "JetBrainsMono Nerd Font";
+}
+
+.notification-row {
+    outline: none;
+    margin: 4px;
+}
+
+.notification {
+    background: @bg-color;
+    border: 2px solid @border-color;
+    border-radius: 10px;
+    color: @text-color;
+    padding: 10px;
+}
+
+.notification-content {
+    margin: 5px;
+}
+
+.notification-default-action:hover {
+    background: @selected-bg-color;
+}
+
+.control-center {
+    background: @bg-color;
+    border: 2px solid @border-color;
+    border-radius: 10px;
+    color: @text-color;
+}
+
+.widget-title {
+    color: @fg-color;
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+.widget-label {
+    color: @fg-color;
+}

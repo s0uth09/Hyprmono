@@ -2,7 +2,7 @@
 
 set -Eeuo pipefail
 
-readonly SCRIPT_VERSION="3.0"
+readonly SCRIPT_VERSION="3.1"
 readonly PROJECT="HyprMono"
 
 DOTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -84,10 +84,12 @@ run() {
 ###############################################################################
 
 PACMAN_PACKAGES=(
-    hyprland hyprlock hyprpaper waybar kitty wofi rofi fuzzel
+    hyprland hyprlock hyprpaper hypridle waybar kitty wofi rofi fuzzel
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
-    nm-applet brightnessctl playerctl wpctl
+    nm-applet brightnessctl playerctl wireplumber pipewire-pulse
+    swaynotificationcenter dunst wlogout swaylock-effects
+    fish fastfetch
 )
 
 install_packages() {
@@ -124,23 +126,29 @@ install_all_configs() {
     local backup_dir="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
     mkdir -p "$backup_dir"
 
-    # Folders to install from $DOTS/config/
-    local config_folders=(
-        fontconfig fuzzel hypr kde-material-you-colors
-        kitty rofi waybar wofi xdg-desktop-portal
-    )
+    # Dynamically find all folders in $DOTS/config/
+    if [[ ! -d "$DOTS/config" ]]; then
+        err "Config directory not found in repository!"
+        return 1
+    fi
+
+    cd "$DOTS/config"
+    local config_folders=(*)
+    cd "$DOTS"
 
     for folder in "${config_folders[@]}"; do
         if [[ -d "$DOTS/config/$folder" ]]; then
+            # Skip hidden folders or special ones if any
+            [[ "$folder" == "." || "$folder" == ".." ]] && continue
+            
             if [[ -d "$CONFIG_DIR/$folder" ]]; then
                 cp -r "$CONFIG_DIR/$folder" "$backup_dir/"
                 log "Backed up $folder"
             fi
+            
             mkdir -p "$CONFIG_DIR/$folder"
             cp -r "$DOTS/config/$folder/"* "$CONFIG_DIR/$folder/"
             ok "Installed $folder configuration"
-        else
-            warn "Source folder $DOTS/config/$folder not found, skipping."
         fi
     done
 
@@ -148,9 +156,15 @@ install_all_configs() {
     title "Installing scripts"
     mkdir -p "$LOCAL_BIN"
     if [[ -d "$DOTS/scripts" ]]; then
-        cp -r "$DOTS/scripts/"* "$LOCAL_BIN/"
-        chmod +x "$LOCAL_BIN"/*.sh
-        ok "Installed helper scripts to $LOCAL_BIN"
+        # Find all shell scripts in scripts directory
+        for script in "$DOTS/scripts"/*.sh; do
+            if [[ -f "$script" ]]; then
+                local script_name=$(basename "$script")
+                cp "$script" "$LOCAL_BIN/"
+                chmod +x "$LOCAL_BIN/$script_name"
+                ok "Installed $script_name to $LOCAL_BIN"
+            fi
+        done
     fi
 }
 
