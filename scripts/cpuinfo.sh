@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 # Minimal CPU info script for Waybar
-cpu_usage=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}')
-printf '{"text": "%.0f", "percentage": %.0f}\n' "$cpu_usage" "$cpu_usage"
+set -euo pipefail
+
+cpu_usage=$(awk 'NR==1 { idle=$5; total=0; for (i=2; i<=NF; i++) total += $i; if (total > 0) printf "%.0f", 100 * (total - idle) / total; else print 0 }' /proc/stat 2>/dev/null || printf 0)
+printf '{"text": "%s", "percentage": %s}\n' "$cpu_usage" "$cpu_usage"
