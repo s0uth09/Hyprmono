@@ -7,16 +7,18 @@
 set -Eeuo pipefail
 
 # --- Absolute Path Resolution ---
-# This ensures the script knows where it is, regardless of how it was called.
+# This ensures the script knows the directory where it is located,
+# and can also derive the repository root relative to that path.
 REAL_PATH=$(readlink -f "${BASH_SOURCE[0]}")
 SCRIPTS_DIR=$(dirname "$REAL_PATH")
-DOTS=$(cd "$SCRIPTS_DIR/.." && pwd)
+DOTS="$SCRIPTS_DIR"
+REPO_ROOT=$(cd "$SCRIPTS_DIR/.." && pwd)
 
 # --- Configuration ---
 readonly PROJECT="HyprMono"
 CONFIG_DIR="$HOME/.config"
 LOCAL_BIN="$HOME/.local/bin"
-LOGFILE="$DOTS/install.log"
+LOGFILE="$REPO_ROOT/install.log"
 TARGET_REPO_DIR="$HOME/.local/share/hyprmono"
 
 # --- Colors ---
@@ -94,8 +96,8 @@ install_configs() {
     title "Configuration Deployment"
 
     # Ensure we look in the right place: ~/.local/share/hyprmono/config
-    # If the user is running the script from the repo, $DOTS/config is the source.
-    local source_config="$DOTS/config"
+    # If the user is running the script from the repo, $REPO_ROOT/config is the source.
+    local source_config="$REPO_ROOT/config"
 
     if [[ ! -d "$source_config" ]]; then
         err "Critical Failure: Config directory not found at $source_config"
@@ -125,7 +127,7 @@ install_configs() {
     # Deploy scripts to ~/.local/bin
     title "Script Deployment"
     mkdir -p "$LOCAL_BIN"
-    for script in "$DOTS/scripts"/*.sh; do
+    for script in "$REPO_ROOT/scripts"/*.sh; do
         if [[ -f "$script" ]]; then
             local script_name=$(basename "$script")
             cp "$script" "$LOCAL_BIN/"
@@ -142,17 +144,17 @@ install_configs() {
 
     # Deploy assets
     title "Asset Deployment"
-    if [[ -d "$DOTS/assets" ]]; then
+    if [[ -d "$REPO_ROOT/assets" ]]; then
         mkdir -p "$CONFIG_DIR/hypr/assets"
-        cp -r "$DOTS/assets/"* "$CONFIG_DIR/hypr/assets/"
+        cp -r "$REPO_ROOT/assets/"* "$CONFIG_DIR/hypr/assets/"
         ok "Deployed assets to $CONFIG_DIR/hypr/assets"
 
         # Install fonts
-        if [[ -d "$DOTS/assets/fonts" ]]; then
+        if [[ -d "$REPO_ROOT/assets/fonts" ]]; then
             info "Updating font cache..."
             mkdir -p "$HOME/.local/share/fonts"
-            cp "$DOTS/assets/fonts"/*.otf "$HOME/.local/share/fonts/" 2>/dev/null || true
-            cp "$DOTS/assets/fonts"/*.ttf "$HOME/.local/share/fonts/" 2>/dev/null || true
+            cp "$REPO_ROOT/assets/fonts"/*.otf "$HOME/.local/share/fonts/" 2>/dev/null || true
+            cp "$REPO_ROOT/assets/fonts"/*.ttf "$HOME/.local/share/fonts/" 2>/dev/null || true
             fc-cache -f
             ok "Fonts installed successfully."
         fi
@@ -172,11 +174,11 @@ main() {
     sudo -v || { err "Sudo authentication failed."; exit 1; }
 
     # Path enforcement
-    if [[ "$DOTS" != "$TARGET_REPO_DIR" ]]; then
-        warn "Repository is at $DOTS instead of $TARGET_REPO_DIR"
+    if [[ "$REPO_ROOT" != "$TARGET_REPO_DIR" ]]; then
+        warn "Repository is at $REPO_ROOT instead of $TARGET_REPO_DIR"
         if ask "Migrate repository to standard location ($TARGET_REPO_DIR)?" y; then
             mkdir -p "$TARGET_REPO_DIR"
-            cp -r "$DOTS/"* "$TARGET_REPO_DIR/"
+            cp -r "$REPO_ROOT/"* "$TARGET_REPO_DIR/"
             ok "Migration complete."
             info "Please run: cd $TARGET_REPO_DIR && ./scripts/install.sh"
             exit 0
