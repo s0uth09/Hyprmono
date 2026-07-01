@@ -56,7 +56,7 @@ ask() {
 # --- Package Management ---
 # Using official Arch package names
 PACMAN_PACKAGES=(
-    hyprland hyprlock hyprpaper hypridle waybar kitty wofi rofi fuzzel
+    hyprland hyprlock hypridle waybar kitty wofi rofi fuzzel
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
     network-manager-applet brightnessctl playerctl wireplumber pipewire-pulse
