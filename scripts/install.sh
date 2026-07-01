@@ -60,7 +60,7 @@ PACMAN_PACKAGES=(
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
     network-manager-applet brightnessctl playerctl wireplumber pipewire-pulse
-    swaynotificationcenter dunst wlogout swaylock-effects
+    swaync dunst wlogout swaylock
     fish fastfetch
 )
 
@@ -79,7 +79,10 @@ install_packages() {
     if (( ${#missing[@]} > 0 )); then
         warn "Missing packages: ${missing[*]}"
         if ask "Install missing dependencies?" y; then
-            sudo pacman -S --needed --noconfirm "${missing[@]}"
+            sudo pacman -S --needed --noconfirm "${missing[@]}" || {
+                err "Pacman failed. Some packages might be in the AUR (e.g., swaylock-effects)."
+                info "Consider using an AUR helper like 'yay' or 'paru'."
+            }
         fi
     else
         ok "All dependencies met."
