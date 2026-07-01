@@ -14,6 +14,9 @@ DOTS=$(cd "$SCRIPTS_DIR/.." && pwd)
 
 # --- Configuration ---
 readonly PROJECT="HyprMono"
+SKIP_PACKAGES=false
+ASSUME_YES=false
+NO_MIGRATE=false
 CONFIG_DIR="$HOME/.config"
 LOCAL_BIN="$HOME/.local/bin"
 LOGFILE="$DOTS/install.log"
@@ -33,7 +36,13 @@ WIDTH=$(tput cols 2>/dev/null || echo 80)
 
 # --- Helpers ---
 log() { printf "[%s] %s\n" "$(date '+%H:%M:%S')" "$*" >> "$LOGFILE"; }
-line() { printf "${GRAY}"; printf '─%.0s' $(seq 1 "$WIDTH"); printf "${RESET}\n"; }
+line() {
+    printf "%b" "${GRAY}"
+    for ((i = 0; i < WIDTH; i++)); do
+        printf '─'
+    done
+    printf "%b\n" "${RESET}"
+}
 title() { echo; echo -e "${BOLD}${LIGHT}$*${RESET}"; line; }
 ok() { echo -e "${GREEN}✓${RESET} $*"; log "[ OK ] $*"; }
 warn() { echo -e "${YELLOW}!${RESET} $*"; log "[WARN] $*"; }
@@ -42,12 +51,74 @@ info() { echo -e "${CYAN}>${RESET} $*"; log "[INFO] $*"; }
 
 has() { command -v "$1" >/dev/null 2>&1; }
 
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [--skip-pkgs] [--yes] [--no-migrate] [--help]
+
+Options:
+  --skip-pkgs     Skip package dependency checks and installation.
+  --yes, -y       Accept prompts with their yes path for unattended syncs.
+  --no-migrate    Do not offer to copy this checkout to the standard location.
+  --help          Show this help.
+EOF
+}
+
+parse_args() {
+    while (( $# > 0 )); do
+        case "$1" in
+            --skip-pkgs|--skip-packages)
+                SKIP_PACKAGES=true
+                ;;
+            -y|--yes)
+                ASSUME_YES=true
+                ;;
+            --no-migrate)
+                NO_MIGRATE=true
+                ;;
+            -h|--help)
+                usage
+                exit 0
+                ;;
+            *)
+                err "Unknown option: $1"
+                usage
+                exit 2
+                ;;
+        esac
+        shift
+    done
+}
+
+
+install_script_file() {
+    local source_file="$1"
+    local dest_file="$2"
+
+    # Replace symlinks instead of writing through them. This avoids failures when
+    # an older install left a dangling link in ~/.local/bin.
+    if [[ -L "$dest_file" ]]; then
+        rm -f -- "$dest_file"
+    fi
+
+    cp -f -- "$source_file" "$dest_file"
+    chmod +x "$dest_file"
+}
+
 ask() {
     local prompt="$1"
     local default="${2:-n}"
     local response
     [[ "$default" == "y" ]] && prompt="$prompt [Y/n]" || prompt="$prompt [y/N]"
-    printf "${BOLD}${YELLOW}?${RESET} %s " "$prompt"
+    if [[ "$ASSUME_YES" == true ]]; then
+        return 0
+    fi
+
+    if [[ ! -t 0 ]]; then
+        [[ "$default" =~ ^[Yy]$ ]]
+        return
+    fi
+
+    printf "%b %s " "${BOLD}${YELLOW}?${RESET}" "$prompt"
     read -r response
     [[ -z "$response" ]] && response="$default"
     [[ "$response" =~ ^[Yy]$ ]]
@@ -78,6 +149,7 @@ install_packages() {
     if (( ${#missing[@]} > 0 )); then
         warn "Missing packages: ${missing[*]}"
         if ask "Install missing dependencies?" y; then
+            sudo -v || { err "Sudo authentication failed."; exit 1; }
             sudo pacman -S --needed --noconfirm "${missing[@]}"
         fi
     else
@@ -101,15 +173,16 @@ install_configs() {
     # Deploy application configs
     for folder_path in "$DOTS/config"/*; do
         if [[ -d "$folder_path" ]]; then
-            local folder_name=$(basename "$folder_path")
+            local folder_name
+            folder_name=$(basename "$folder_path")
             
             if [[ -d "$CONFIG_DIR/$folder_name" ]]; then
-                cp -r "$CONFIG_DIR/$folder_name" "$backup_dir/"
+                cp -a "$CONFIG_DIR/$folder_name" "$backup_dir/"
                 log "Backed up $folder_name"
             fi
             
             mkdir -p "$CONFIG_DIR/$folder_name"
-            cp -r "$folder_path/"* "$CONFIG_DIR/$folder_name/"
+            cp -a "$folder_path/." "$CONFIG_DIR/$folder_name/"
             ok "Deployed $folder_name"
         fi
     done
@@ -119,9 +192,9 @@ install_configs() {
     mkdir -p "$LOCAL_BIN"
     for script in "$DOTS/scripts"/*.sh; do
         if [[ -f "$script" ]]; then
-            local script_name=$(basename "$script")
-            cp "$script" "$LOCAL_BIN/"
-            chmod +x "$LOCAL_BIN/$script_name"
+            local script_name
+            script_name=$(basename "$script")
+            install_script_file "$script" "$LOCAL_BIN/$script_name"
             ok "Installed $script_name to $LOCAL_BIN"
         fi
     done
@@ -136,7 +209,7 @@ install_configs() {
     title "Asset Deployment"
     if [[ -d "$DOTS/assets" ]]; then
         mkdir -p "$CONFIG_DIR/hypr/assets"
-        cp -r "$DOTS/assets/"* "$CONFIG_DIR/hypr/assets/"
+        cp -a "$DOTS/assets/." "$CONFIG_DIR/hypr/assets/"
         ok "Deployed assets to $CONFIG_DIR/hypr/assets"
 
         # Install fonts
@@ -152,7 +225,7 @@ install_configs() {
 }
 
 main() {
-    clear
+    [[ -t 1 ]] && clear
     echo -e "${LIGHT}${BOLD}HyprMono Installation Framework${RESET}"
     line
 
@@ -161,21 +234,23 @@ main() {
         exit 1
     fi
 
-    sudo -v || { err "Sudo authentication failed."; exit 1; }
-
     # Path enforcement
-    if [[ "$DOTS" != "$TARGET_REPO_DIR" ]]; then
+    if [[ "$NO_MIGRATE" != true && "$DOTS" != "$TARGET_REPO_DIR" ]]; then
         warn "Repository is at $DOTS instead of $TARGET_REPO_DIR"
         if ask "Migrate repository to standard location?" y; then
             mkdir -p "$TARGET_REPO_DIR"
-            cp -r "$DOTS/"* "$TARGET_REPO_DIR/"
+            cp -a "$DOTS/." "$TARGET_REPO_DIR/"
             ok "Migration complete."
             info "Please run: cd $TARGET_REPO_DIR && ./hyde install"
             exit 0
         fi
     fi
 
-    install_packages
+    if [[ "$SKIP_PACKAGES" == true ]]; then
+        warn "Skipping package dependency checks."
+    else
+        install_packages
+    fi
     
     if ask "Proceed with configuration deployment?" y; then
         install_configs
@@ -186,4 +261,5 @@ main() {
     echo -e "Next Steps:\n  1. Reboot.\n  2. Select Hyprland.\n  3. Use 'hyde' to manage your setup."
 }
 
-main "$@"
+parse_args "$@"
+main
