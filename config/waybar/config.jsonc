@@ -15,6 +15,7 @@
     "battery",
     "custom/gpuinfo",
     "custom/cpuinfo",
+    "custom/wallpaper",
     "custom/swaync"
   ],
 
@@ -96,5 +97,11 @@
   "tray": {
     "icon-size": 16,
     "spacing": 10
+  },
+  "custom/wallpaper": {
+    "format": "󰸉",
+    "on-click": "bash ~/.local/bin/change_wallpaper.sh",
+    "tooltip": true,
+    "tooltip-format": "Change Wallpaper"
   }
 }

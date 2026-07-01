@@ -1,0 +1,70 @@
+#! /bin/env bash
+
+# Function to execute a command with elevated privileges
+
+. Package-Manager
+
+. lib-hyde
+
+# Cache-dir
+export cacheDir="${HOME}/.cache/hyde"
+export META_FILE="${cacheDir}/hyde.meta" #! This is almost immovable! use chattr to disable perms
+export settingDir="${cacheDir}/hyde-settings"
+export landingDir="${cacheDir}/landing"
+
+#! Temporary
+[ -e "${cacheDir}/hyde-cli/hyde.meta" ] && mv "${HOME}/.cache/hyde-cli/hyde.meta" "${META_FILE}"
+
+# HYDE-CLI
+export CLI_PATH=$(dirname $(dirname ${0}))
+export PATH=$PATH:${CLI_PATH}/lib/hyde-cli/
+export HYDE_RUNTIME_DIR=$XDG_RUNTIME_DIR/hyde
+
+# Cli Configs
+export etcDir="/etc/hyde-cli"
+ [[ "${CLI_PATH}" == *"/usr"* ]] || etcDir="$HOME/.hyde-cli"
+export usrDir="${CLI_PATH}/share/hyde-cli"
+
+# Config
+export confDir="${XDG_CONFIG_HOME:-$HOME/.config}"
+export hydeConfDir="${confDir}/hyde"
+export BkpDir="${confDir}/cfg_backups"
+export wallbashDir="${hydeConfDir}/wallbash"
+export themeDir="${hydeConfDir}/themes"
+
+install_packages_list="${HYDE_RUNTIME_DIR}/temporary-apps"
+export install_packages_list
+export ctlFile="${cacheDir}/manage_cfg.lst" #! Will use cacheDir
+ctl_override="${HYDE_RUNTIME_DIR}/$(basename "${ctlFile}")"
+export ctl_override
+
+scrDir=""$(dirname $(which globalcontrol.sh 2>/dev/null) 2>/dev/null)""
+[ ! -e "${scrDir}/globalcontrol.sh" ] && export scrDir="$HOME/.local/share/bin/"
+[ ! -e "${scrDir}/globalcontrol.sh" ] && export scrDir="$HOME/.local/lib/hyde/"
+[ ! -e "${scrDir}/globalcontrol.sh" ] && [[ ${is_fresh_install} != true ]] && handle_error "Scripts for HyDE not detected at ${scrDir}"
+
+export scrDir
+[[ ${is_fresh_install} != true ]] && . $scrDir/globalcontrol.sh
+
+#TODO Source the metadata here
+
+make_dir=(
+    "${BkpDir}"
+    "${cacheDir}"
+    "${settingDir}"
+    "${landingDir}"
+    "${etcDir}"
+    "${HYDE_RUNTIME_DIR}"
+)
+
+for dir in "${make_dir[@]}"; do
+    if [[ ! -d "${dir}" ]] && [[ -n "${dir}" ]]; then
+        mkdir -p "${dir}"
+        echo "Hyde-cli created a directory: ${dir}"
+    fi
+done
+
+if [ "$(ls -A "$BkpDir")" ]; then
+    last_bak=$(ls -td -- $BkpDir/* | head -n 1)
+fi
+export last_bak

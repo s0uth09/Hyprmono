@@ -1,0 +1,183 @@
+#!/bin/env bash
+
+    . GLOBAL-hyde
+
+# Git_Repo="https://github.com/kRHYME7/hyde-gallery"
+Git_Repo="https://github.com/HyDE-Project/hyde-gallery.git"
+hyde_gallery_dir="${cacheDir}/landing/hyde-gallery"
+file_DB="${hyde_gallery_dir}/hyde-themes.db"
+themepatcher_lst="${hyde_gallery_dir}/themepatcher.lst"
+
+(
+    if [ -d "$hyde_gallery_dir" ]; then
+        git -C "$hyde_gallery_dir" fetch --all &>/dev/null
+        git -C "$hyde_gallery_dir" reset --hard @{upstream} &>/dev/null
+        if [ $? -ne 0 ]; then
+            print_prompt "Errors on the directory, retrying"
+            rm -r "${hyde_gallery_dir}"
+            exec $0
+            exit 1
+        fi
+    else
+        git clone --depth 1 "$Git_Repo" "$hyde_gallery_dir"
+        if [ $? -ne 0 ]; then
+            print_prompt "Git clone failed"
+            exit 1
+        fi
+    fi
+) &
+loading_spinner $! $?
+[ ! -d "${hyde_gallery_dir}" ] && exit 1
+
+#! Deprectaed I'll be using json now...
+parse_ini() {
+    local section="$1"
+    local in_section=false
+    local key=""
+    local value=""
+
+    while IFS= read -r line; do
+        # Check if the line is a section header
+        if [[ $line =~ ^\[([^\]]+)\]$ ]]; then
+            # If the section matches, set in_section to true
+            if [[ "${BASH_REMATCH[1]}" == "$section" ]]; then
+                in_section=true
+            else
+                in_section=false
+            fi
+        elif $in_section && [[ $line =~ ^([^=]+)=(.*)$ ]]; then
+            # If in the correct section, extract key and value
+            key="${BASH_REMATCH[1]}"
+            value="${BASH_REMATCH[2]}"
+            # Remove quotes from the value if present
+            value="${value#\"}"
+            value="${value%\"}"
+            # Export the variable
+            export "$key=$value"
+        fi
+    done <"${file_DB}"
+}
+
+export_DB() {
+theme_name="${1}"
+
+eval "$(jq -r --arg THEME "$theme_name" '
+  .[] | 
+  select(.THEME == $THEME) | 
+  to_entries | 
+.[] | 
+"export \(.key)=\"\(.value)\" "
+' < "${hyde_gallery_dir}/hyde-themes.json")"
+}
+
+generate_theme_list() {
+    theme_menu
+    # echo -e "${patchList}"
+    : >"${themepatcher_lst}"
+    while IFS= read -r selected_theme; do
+        export_DB "${selected_theme}"
+        echo -e "\"$selected_theme\"" "\"$LINK\"" >>"${themepatcher_lst}"
+    done <<<"$patchList"
+}
+
+get_preview() {
+    if [[ $(tput colors) -lt "256" ]]; then return; fi
+    image_url="${1}"
+    [ -z "${image_url}" ] && return 1
+    if [ xterm-kitty == "$TERM" ]; then
+        kitty icat --clear --transfer-mode=memory --stdin=no --place=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@20x2 "$image_url"
+    else
+        if command -v jp2a &>/dev/null; then
+            find "${image_url}" -name "*" -exec jp2a --colors --color-depth=24 --chars=' .:-=+*#%@' --fill --term-fit --background=dark {} \; 2>/dev/null
+        else
+            cat <<EOF
+          ░▒▒▒░░░░░▓▓          ___________
+        ░░▒▒▒░░░░░▓▓        //___________/
+       ░░▒▒▒░░░░░▓▓     _   _ _    _ _____
+       ░░▒▒░░░░░▓▓▓▓▓▓ | | | | |  | |  __/
+        ░▒▒░░░░▓▓   ▓▓ | |_| | |_/ /| |___
+         ░▒▒░░▓▓   ▓▓   \__  |____/ |____/
+           ░▒▓▓   ▓▓  //____/
+
+EOF
+            print_prompt -y "Install 'jp2a' to preview in ASCII format"
+        fi
+    fi
+}
+
+preview_theme() {
+    clear
+    export THEME="$1"
+    export_DB "${THEME}"
+    print_prompt -c " \\\ $THEME \\\ " -g "\nLink: " "${LINK}" -y "\nOwner: " "${OWNER}\n" -c "Description: " "${DESCRIPTION}\n"
+    hyde_gallery_dir="${hyde_gallery_dir}/${THEME}"
+    [ ! -f "${hyde_gallery_dir}" ] && mkdir -p "${hyde_gallery_dir}"
+    if [[ $(find "${hyde_gallery_dir}" -maxdepth 1 -type f | wc -l) -gt 1 ]]; then
+        # while true; do
+        for image_file in "${hyde_gallery_dir}"/*; do
+            get_preview "${image_file}" &
+            break
+            # echo . &    #  sleep 2
+        done
+    # done
+    else
+        get_preview "${hyde_gallery_dir}" &
+    fi
+
+    #  find "${hyde_gallery_dir}" -maxdepth 1 -type f | wc -l
+}
+
+theme_menu() {
+#!    patchList=$({ echo [Confirm] ; sed -n 's/.*\[\(.*\)\].*/\1/p' "${file_DB}" ;} | Fzf-Menu "${FUNCNAME[0]}")
+    patchList=$({ echo [Confirm] ; jq -r '.[].THEME' "${hyde_gallery_dir}/hyde-themes.json" ;} | Fzf-Menu "${FUNCNAME[0]}")
+    patchList=$(sed '/\[Confirm\]/d' <<< "${patchList}")
+    patchList=${patchList:-${defaultTheme}}
+    [ -z "${patchList}" ] && exit 0
+    readonly patchList
+    export patchList
+}
+
+theme_patcher() {
+    generate_theme_list
+    themeCount="$(wc -l <<< "${patchList}")"
+    [ ! -f "${themepatcher_lst}" ] && return
+    [ "${themeCount}" == 1 ] && export SINGLE_THEME_ONLY=true
+    print_prompt -g "[themepatcher]" " Patching ${themeCount} theme/s..."
+    barLine
+    print_prompt "${patchList}"
+    barLine
+    ask_confirm
+
+if [ "${SINGLE_THEME_ONLY}" = true ]; then
+eval Patch-Theme "$(cat "${themepatcher_lst}")"
+else
+    while IFS='"' read -r null1 themeName null2 themeRepo; do
+        themeNameQ+=("${themeName//\"/}")
+        themeRepoQ+=("${themeRepo//\"/}")
+        themePath="${confDir}/hyde/themes/${themeName}"
+        [ -d "${themePath}" ] || mkdir -p "${themePath}"
+        [ -f "${themePath}/.sort" ] || echo "${#themeNameQ[@]}" >"${themePath}/.sort"
+    done <"${themepatcher_lst}"    
+    #! parallel --bar --link "${CloneDir}/Scripts/themepatcher.sh" "{1}" "{2}" "{3}" "{4}" ::: "${themeNameQ[@]}" ::: "${themeRepoQ[@]}" ::: "--skipcaching" ::: "false"
+    parallel --bar --link "Patch-Theme" "{1}" "{2}" "{3}" "{4}" ::: "${themeNameQ[@]}" ::: "${themeRepoQ[@]}" ::: "--skipcaching" ::: "false"
+    print_prompt -g "\n[cache]" " generating cache files..."
+    #TODO Clean the ScrDir
+    "${scrDir}/swwwallcache.sh" -t ""
+    if printenv HYPRLAND_INSTANCE_SIGNATURE &>/dev/null; then
+        "${scrDir}/themeswitch.sh" &>/dev/null
+    fi
+
+    readarray -t themesList <<<"$patchList"
+    for theme in "${themesList[@]}"; do
+        if [ -d "${HOME}/.config/hyde/themes/${theme}" ]; then
+            print_prompt -g "[OK]" " $theme"
+        else
+            print_prompt -r "[ERROR]" " $theme"
+        fi
+    done
+fi
+}
+
+eval "$(declare -F | sed -e 's/-f /-fx /')"
+
+"${@}"

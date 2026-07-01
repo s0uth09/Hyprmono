@@ -1,0 +1,40 @@
+#!/bin/env bash
+
+enable_package variety
+
+varietyDir=$confDir/variety/hyde
+varietyScript="${varietyDir}/scripts/hyde_wallpaper"
+
+
+[[ "${*}" = *"--reset"* ]] && shift && rm  -fr ~/.config/variety/hyde/
+
+# Pass arguments here
+if [[ -n ${*} ]]; then
+    print_prompt -y "Command:" "${@}"
+    variety --profile="${varietyDir}" --set-option=set_wallpaper_script "${varietyScript}" "${@}"
+    exit 0
+fi
+
+# This will loop forever
+if [[ -e "${varietyScript}" ]] ; then
+    print_prompt -y "Starting as Daemon"
+    [[ -z "${*}" ]] && print_prompt -y "'Hyde wallpaper variety [ -h | --help ]' for options"
+    variety --profile="${varietyDir}" --set-option=set_wallpaper_script "${varietyScript}"
+    exit 0
+fi
+
+# One time Setup
+nohup variety --profile="${varietyDir}" --set-option=set_wallpaper_script "${varietyScript}" &
+
+while [[ ! -e "${varietyDir}" ]]; do sleep 1 ; done
+
+notify-send -a "Hyde: Variety Setup" "Please setup your profile" -e
+sed -n '/^### startVARIETY ###$/,/^### endVARIETY ###$/{//!p}' "${0}" > "${varietyScript}"
+chmod +x "${varietyScript}" && exec ${0} "${@}"
+
+exit 0
+
+### startVARIETY ###
+#! /bin/env bash
+swwwallpaper.sh -s "${1}"
+### endVARIETY ###
