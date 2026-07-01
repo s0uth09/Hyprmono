@@ -19,7 +19,7 @@ readonly PROJECT="HyprMono"
 CONFIG_DIR="$HOME/.config"
 LOCAL_BIN="$HOME/.local/bin"
 LOGFILE="$REPO_ROOT/install.log"
-TARGET_REPO_DIR="$HOME/.local/share/hyprmono"
+TARGET_REPO_DIR="$HOME/.local/share/Hyprmono"
 
 # --- Colors ---
 RESET="\e[0m"
