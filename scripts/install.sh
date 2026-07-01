@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # H Y P R M O N O - The Definitive Installer
-# Version: 4.0 (Final Rewrite)
+# Version: 4.1 (Path Fix Update)
 # Purpose: Robust, path-aware installation for the HyprMono environment.
 
 set -Eeuo pipefail
@@ -18,6 +18,7 @@ CONFIG_DIR="$HOME/.config"
 LOCAL_BIN="$HOME/.local/bin"
 LOGFILE="$DOTS/install.log"
 TARGET_REPO_DIR="$HOME/.local/share/hyprmono"
+REPO_CONFIG_DIR="$TARGET_REPO_DIR/config"
 
 # --- Colors ---
 RESET="\e[0m"
@@ -89,8 +90,8 @@ install_packages() {
 install_configs() {
     title "Configuration Deployment"
 
-    if [[ ! -d "$DOTS/config" ]]; then
-        err "Critical Failure: Config directory not found at $DOTS/config"
+    if [[ ! -d "$REPO_CONFIG_DIR" ]]; then
+        err "Critical Failure: Config directory not found at $REPO_CONFIG_DIR"
         exit 1
     fi
 
@@ -99,7 +100,7 @@ install_configs() {
     mkdir -p "$backup_dir"
 
     # Deploy application configs
-    for folder_path in "$DOTS/config"/*; do
+    for folder_path in "$REPO_CONFIG_DIR"/*; do
         if [[ -d "$folder_path" ]]; then
             local folder_name=$(basename "$folder_path")
             
@@ -117,7 +118,7 @@ install_configs() {
     # Deploy scripts to ~/.local/bin
     title "Script Deployment"
     mkdir -p "$LOCAL_BIN"
-    for script in "$DOTS/scripts"/*.sh; do
+    for script in "$TARGET_REPO_DIR/scripts"/*.sh; do
         if [[ -f "$script" ]]; then
             local script_name=$(basename "$script")
             cp "$script" "$LOCAL_BIN/"
@@ -134,17 +135,17 @@ install_configs() {
 
     # Deploy assets
     title "Asset Deployment"
-    if [[ -d "$DOTS/assets" ]]; then
+    if [[ -d "$TARGET_REPO_DIR/assets" ]]; then
         mkdir -p "$CONFIG_DIR/hypr/assets"
-        cp -r "$DOTS/assets/"* "$CONFIG_DIR/hypr/assets/"
+        cp -r "$TARGET_REPO_DIR/assets/"* "$CONFIG_DIR/hypr/assets/"
         ok "Deployed assets to $CONFIG_DIR/hypr/assets"
 
         # Install fonts
-        if [[ -d "$DOTS/assets/fonts" ]]; then
+        if [[ -d "$TARGET_REPO_DIR/assets/fonts" ]]; then
             info "Updating font cache..."
             mkdir -p "$HOME/.local/share/fonts"
-            cp "$DOTS/assets/fonts"/*.otf "$HOME/.local/share/fonts/" 2>/dev/null || true
-            cp "$DOTS/assets/fonts"/*.ttf "$HOME/.local/share/fonts/" 2>/dev/null || true
+            cp "$TARGET_REPO_DIR/assets/fonts"/*.otf "$HOME/.local/share/fonts/" 2>/dev/null || true
+            cp "$TARGET_REPO_DIR/assets/fonts"/*.ttf "$HOME/.local/share/fonts/" 2>/dev/null || true
             fc-cache -f
             ok "Fonts installed successfully."
         fi
@@ -170,7 +171,7 @@ main() {
             mkdir -p "$TARGET_REPO_DIR"
             cp -r "$DOTS/"* "$TARGET_REPO_DIR/"
             ok "Migration complete."
-            info "Please run: cd $TARGET_REPO_DIR && ./hyde install"
+            info "Please run: cd $TARGET_REPO_DIR && ./scripts/install.sh"
             exit 0
         fi
     fi
