@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
+# HyprMono Installation Script
+# A refined, high-contrast monochrome Hyprland configuration.
+
 set -Eeuo pipefail
 
-readonly SCRIPT_VERSION="3.1"
+readonly SCRIPT_VERSION="3.2"
 readonly PROJECT="HyprMono"
 
 DOTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -84,10 +87,11 @@ run() {
 ###############################################################################
 
 PACMAN_PACKAGES=(
-    hyprland hyprlock hyprpaper waybar kitty wofi rofi fuzzel
+    hyprland hyprlock hyprpaper hypridle waybar kitty wofi rofi-wayland fuzzel
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
-    nm-applet brightnessctl playerctl wpctl
+    nm-applet brightnessctl playerctl wpctl dunst swaynotificationcenter
+    fish fastfetch wlogout
 )
 
 install_packages() {
@@ -124,7 +128,6 @@ install_all_configs() {
     local backup_dir="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
     mkdir -p "$backup_dir"
 
-    # Dynamically find all folders in $DOTS/config/
     if [[ ! -d "$DOTS/config" ]]; then
         err "Config directory not found in repository!"
         return 1
@@ -136,7 +139,6 @@ install_all_configs() {
 
     for folder in "${config_folders[@]}"; do
         if [[ -d "$DOTS/config/$folder" ]]; then
-            # Skip hidden folders or special ones if any
             [[ "$folder" == "." || "$folder" == ".." ]] && continue
             
             if [[ -d "$CONFIG_DIR/$folder" ]]; then
@@ -154,7 +156,6 @@ install_all_configs() {
     title "Installing scripts"
     mkdir -p "$LOCAL_BIN"
     if [[ -d "$DOTS/scripts" ]]; then
-        # Find all shell scripts in scripts directory
         for script in "$DOTS/scripts"/*.sh; do
             if [[ -f "$script" ]]; then
                 local script_name=$(basename "$script")
@@ -163,6 +164,13 @@ install_all_configs() {
                 ok "Installed $script_name to $LOCAL_BIN"
             fi
         done
+    fi
+
+    # Symlink uninstall.sh to local bin for convenience
+    if [[ -f "$DOTS/uninstall.sh" ]]; then
+        cp "$DOTS/uninstall.sh" "$LOCAL_BIN/"
+        chmod +x "$LOCAL_BIN/uninstall.sh"
+        ok "Installed uninstall.sh to $LOCAL_BIN"
     fi
 }
 
@@ -200,7 +208,6 @@ main() {
     ok "Enjoy your new setup!"
 }
 
-# Simple argument parsing
 if [[ "${1:-}" == "--dry-run" ]]; then
     DRY_RUN=true
     shift
