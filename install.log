@@ -1,1 +1,105 @@
 [19:57:18] [FAIL] Sudo authentication failed
+[22:54:50] [WARN] Missing packages: swaynotificationcenter swaylock-effects
+[22:54:57] Starting backup...
+[22:54:57] [ OK ] Deployed dunst
+[22:54:57] [ OK ] Deployed fastfetch
+[22:54:57] [ OK ] Deployed fish
+[22:54:57] [ OK ] Deployed fontconfig
+[22:54:57] [ OK ] Deployed fuzzel
+[22:54:57] Backed up hypr
+[22:54:57] [ OK ] Deployed hypr
+[22:54:57] [ OK ] Deployed kde-material-you-colors
+[22:54:57] Backed up kitty
+[22:54:57] [ OK ] Deployed kitty
+[22:54:57] [ OK ] Deployed rofi
+[22:54:57] [ OK ] Deployed swaylock
+[22:54:57] [ OK ] Deployed swaync
+[22:54:57] [ OK ] Deployed vim
+[22:54:57] [ OK ] Deployed waybar
+[22:54:57] [ OK ] Deployed wlogout
+[22:54:57] [ OK ] Deployed wofi
+[22:54:57] [ OK ] Deployed xdg-desktop-portal
+[22:54:57] [ OK ] Installed cpuinfo.sh to /home/south/.local/bin
+[22:54:57] [ OK ] Installed fuzzel-emojis.sh to /home/south/.local/bin
+[22:54:57] [ OK ] Installed gpuinfo.sh to /home/south/.local/bin
+[22:54:57] [ OK ] Installed hyde-shell.sh to /home/south/.local/bin
+[22:54:57] [ OK ] Installed install.sh to /home/south/.local/bin
+[22:55:56] [WARN] Missing packages: swaynotificationcenter swaylock-effects
+[22:55:59] Starting backup...
+[22:55:59] Backed up dunst
+[22:55:59] [ OK ] Deployed dunst
+[22:55:59] Backed up fastfetch
+[22:55:59] [ OK ] Deployed fastfetch
+[22:55:59] Backed up fish
+[22:55:59] [ OK ] Deployed fish
+[22:55:59] Backed up fontconfig
+[22:55:59] [ OK ] Deployed fontconfig
+[22:55:59] Backed up fuzzel
+[22:55:59] [ OK ] Deployed fuzzel
+[22:55:59] Backed up hypr
+[22:55:59] [ OK ] Deployed hypr
+[22:55:59] Backed up kde-material-you-colors
+[22:55:59] [ OK ] Deployed kde-material-you-colors
+[22:55:59] Backed up kitty
+[22:55:59] [ OK ] Deployed kitty
+[22:55:59] Backed up rofi
+[22:55:59] [ OK ] Deployed rofi
+[22:55:59] Backed up swaylock
+[22:55:59] [ OK ] Deployed swaylock
+[22:55:59] Backed up swaync
+[22:55:59] [ OK ] Deployed swaync
+[22:55:59] Backed up vim
+[22:55:59] [ OK ] Deployed vim
+[22:55:59] Backed up waybar
+[22:55:59] [ OK ] Deployed waybar
+[22:55:59] Backed up wlogout
+[22:55:59] [ OK ] Deployed wlogout
+[22:55:59] Backed up wofi
+[22:55:59] [ OK ] Deployed wofi
+[22:55:59] Backed up xdg-desktop-portal
+[22:55:59] [ OK ] Deployed xdg-desktop-portal
+[22:55:59] [ OK ] Installed cpuinfo.sh to /home/south/.local/bin
+[22:55:59] [ OK ] Installed fuzzel-emojis.sh to /home/south/.local/bin
+[22:55:59] [ OK ] Installed gpuinfo.sh to /home/south/.local/bin
+[22:55:59] [ OK ] Installed hyde-shell.sh to /home/south/.local/bin
+[22:55:59] [ OK ] Installed install.sh to /home/south/.local/bin
+[22:56:46] [WARN] Missing packages: swaynotificationcenter swaylock-effects
+[22:56:52] [WARN] Missing packages: swaynotificationcenter swaylock-effects
+[22:56:59] Starting backup...
+[22:56:59] Backed up dunst
+[22:56:59] [ OK ] Deployed dunst
+[22:56:59] Backed up fastfetch
+[22:56:59] [ OK ] Deployed fastfetch
+[22:56:59] Backed up fish
+[22:56:59] [ OK ] Deployed fish
+[22:56:59] Backed up fontconfig
+[22:56:59] [ OK ] Deployed fontconfig
+[22:56:59] Backed up fuzzel
+[22:56:59] [ OK ] Deployed fuzzel
+[22:56:59] Backed up hypr
+[22:56:59] [ OK ] Deployed hypr
+[22:56:59] Backed up kde-material-you-colors
+[22:56:59] [ OK ] Deployed kde-material-you-colors
+[22:56:59] Backed up kitty
+[22:56:59] [ OK ] Deployed kitty
+[22:56:59] Backed up rofi
+[22:56:59] [ OK ] Deployed rofi
+[22:56:59] Backed up swaylock
+[22:56:59] [ OK ] Deployed swaylock
+[22:56:59] Backed up swaync
+[22:56:59] [ OK ] Deployed swaync
+[22:56:59] Backed up vim
+[22:56:59] [ OK ] Deployed vim
+[22:56:59] Backed up waybar
+[22:56:59] [ OK ] Deployed waybar
+[22:56:59] Backed up wlogout
+[22:56:59] [ OK ] Deployed wlogout
+[22:56:59] Backed up wofi
+[22:56:59] [ OK ] Deployed wofi
+[22:56:59] Backed up xdg-desktop-portal
+[22:56:59] [ OK ] Deployed xdg-desktop-portal
+[22:56:59] [ OK ] Installed cpuinfo.sh to /home/south/.local/bin
+[22:56:59] [ OK ] Installed fuzzel-emojis.sh to /home/south/.local/bin
+[22:56:59] [ OK ] Installed gpuinfo.sh to /home/south/.local/bin
+[22:56:59] [ OK ] Installed hyde-shell.sh to /home/south/.local/bin
+[22:56:59] [ OK ] Installed install.sh to /home/south/.local/bin
