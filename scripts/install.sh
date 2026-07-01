@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # H Y P R M O N O - The Definitive Installer
-# Version: 4.1 (Path Fix Update)
+# Version: 4.3 (Path & Package Fix)
 # Purpose: Robust, path-aware installation for the HyprMono environment.
 
 set -Eeuo pipefail
@@ -18,7 +18,6 @@ CONFIG_DIR="$HOME/.config"
 LOCAL_BIN="$HOME/.local/bin"
 LOGFILE="$DOTS/install.log"
 TARGET_REPO_DIR="$HOME/.local/share/hyprmono"
-REPO_CONFIG_DIR="$TARGET_REPO_DIR/config"
 
 # --- Colors ---
 RESET="\e[0m"
@@ -55,8 +54,9 @@ ask() {
 }
 
 # --- Package Management ---
+# Using official Arch package names
 PACMAN_PACKAGES=(
-    hyprland hyprlock hyprpaper hypridle waybar kitty wofi rofi-wayland fuzzel
+    hyprland hyprlock hyprpaper hypridle waybar kitty wofi rofi fuzzel
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
     network-manager-applet brightnessctl playerctl wireplumber pipewire-pulse
@@ -80,8 +80,8 @@ install_packages() {
         warn "Missing packages: ${missing[*]}"
         if ask "Install missing dependencies?" y; then
             sudo pacman -S --needed --noconfirm "${missing[@]}" || {
-                err "Pacman failed. Some packages might be in the AUR (e.g., swaylock-effects)."
-                info "Consider using an AUR helper like 'yay' or 'paru'."
+                err "Pacman failed to install some packages."
+                info "If you need AUR packages like 'swaylock-effects' or 'rofi-wayland', please use an AUR helper (yay/paru)."
             }
         fi
     else
@@ -93,8 +93,12 @@ install_packages() {
 install_configs() {
     title "Configuration Deployment"
 
-    if [[ ! -d "$REPO_CONFIG_DIR" ]]; then
-        err "Critical Failure: Config directory not found at $REPO_CONFIG_DIR"
+    # Ensure we look in the right place: ~/.local/share/hyprmono/config
+    # If the user is running the script from the repo, $DOTS/config is the source.
+    local source_config="$DOTS/config"
+
+    if [[ ! -d "$source_config" ]]; then
+        err "Critical Failure: Config directory not found at $source_config"
         exit 1
     fi
 
@@ -103,7 +107,7 @@ install_configs() {
     mkdir -p "$backup_dir"
 
     # Deploy application configs
-    for folder_path in "$REPO_CONFIG_DIR"/*; do
+    for folder_path in "$source_config"/*; do
         if [[ -d "$folder_path" ]]; then
             local folder_name=$(basename "$folder_path")
             
@@ -121,7 +125,7 @@ install_configs() {
     # Deploy scripts to ~/.local/bin
     title "Script Deployment"
     mkdir -p "$LOCAL_BIN"
-    for script in "$TARGET_REPO_DIR/scripts"/*.sh; do
+    for script in "$DOTS/scripts"/*.sh; do
         if [[ -f "$script" ]]; then
             local script_name=$(basename "$script")
             cp "$script" "$LOCAL_BIN/"
@@ -138,17 +142,17 @@ install_configs() {
 
     # Deploy assets
     title "Asset Deployment"
-    if [[ -d "$TARGET_REPO_DIR/assets" ]]; then
+    if [[ -d "$DOTS/assets" ]]; then
         mkdir -p "$CONFIG_DIR/hypr/assets"
-        cp -r "$TARGET_REPO_DIR/assets/"* "$CONFIG_DIR/hypr/assets/"
+        cp -r "$DOTS/assets/"* "$CONFIG_DIR/hypr/assets/"
         ok "Deployed assets to $CONFIG_DIR/hypr/assets"
 
         # Install fonts
-        if [[ -d "$TARGET_REPO_DIR/assets/fonts" ]]; then
+        if [[ -d "$DOTS/assets/fonts" ]]; then
             info "Updating font cache..."
             mkdir -p "$HOME/.local/share/fonts"
-            cp "$TARGET_REPO_DIR/assets/fonts"/*.otf "$HOME/.local/share/fonts/" 2>/dev/null || true
-            cp "$TARGET_REPO_DIR/assets/fonts"/*.ttf "$HOME/.local/share/fonts/" 2>/dev/null || true
+            cp "$DOTS/assets/fonts"/*.otf "$HOME/.local/share/fonts/" 2>/dev/null || true
+            cp "$DOTS/assets/fonts"/*.ttf "$HOME/.local/share/fonts/" 2>/dev/null || true
             fc-cache -f
             ok "Fonts installed successfully."
         fi
@@ -170,7 +174,7 @@ main() {
     # Path enforcement
     if [[ "$DOTS" != "$TARGET_REPO_DIR" ]]; then
         warn "Repository is at $DOTS instead of $TARGET_REPO_DIR"
-        if ask "Migrate repository to standard location?" y; then
+        if ask "Migrate repository to standard location ($TARGET_REPO_DIR)?" y; then
             mkdir -p "$TARGET_REPO_DIR"
             cp -r "$DOTS/"* "$TARGET_REPO_DIR/"
             ok "Migration complete."
