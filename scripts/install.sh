@@ -109,36 +109,10 @@ install_configs() {
             fi
             
             mkdir -p "$CONFIG_DIR/$folder_name"
-            if [[ "$folder_name" == "hypr" ]]; then
-                # custom/ holds personal overrides and gets stub-protected
-                # separately below — don't let the bulk copy clobber it.
-                for item in "$folder_path"/*; do
-                    [[ "$(basename "$item")" == "custom" ]] && continue
-                    cp -r "$item" "$CONFIG_DIR/$folder_name/"
-                done
-            else
-                cp -r "$folder_path/"* "$CONFIG_DIR/$folder_name/"
-            fi
+            cp -r "$folder_path/"* "$CONFIG_DIR/$folder_name/"
             ok "Deployed $folder_name"
         fi
     done
-
-    # ~/.config/hypr/custom/ holds personal overrides and is sourced last by
-    # hyprland.conf. It must never be silently overwritten on reinstall: only
-    # write a file there if it doesn't already exist (first-run stub creation).
-    if [[ -d "$DOTS/config/hypr/custom" ]]; then
-        mkdir -p "$CONFIG_DIR/hypr/custom"
-        for stub in "$DOTS/config/hypr/custom"/*; do
-            local stub_name=$(basename "$stub")
-            local dest="$CONFIG_DIR/hypr/custom/$stub_name"
-            if [[ -e "$dest" ]]; then
-                log "Kept existing $stub_name (not overwritten)"
-            else
-                cp "$stub" "$dest"
-                ok "Created stub $stub_name"
-            fi
-        done
-    fi
 
     # Deploy scripts to ~/.local/bin
     title "Script Deployment"

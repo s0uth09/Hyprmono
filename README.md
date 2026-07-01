@@ -98,17 +98,17 @@ Hypr.dots/
 │   └── fuzzel-emojis.sh            → ~/.local/bin/fuzzel-emojis
 └── config/
     ├── hypr/
-    │   ├── hyprland.lua            ← Hyprland entry point
-    │   ├── hyprland/               ← config modules
-    │   │   ├── autostart.lua
-    │   │   ├── binds.lua
-    │   │   ├── colours.lua
-    │   │   ├── env.lua
-    │   │   ├── general.lua
-    │   │   ├── monitors.lua
-    │   │   ├── permission.lua
-    │   │   ├── variables.lua
-    │   │   └── windowsrule.lua
+    │   ├── hyprland.conf           ← Hyprland entry point
+    │   ├── conf.d/                 ← config modules
+    │   │   ├── autostart.conf
+    │   │   ├── binds.conf
+    │   │   ├── colours.conf
+    │   │   ├── env.conf
+    │   │   ├── general.conf
+    │   │   ├── monitors.conf
+    │   │   ├── permission.conf
+    │   │   ├── variables.conf
+    │   │   └── windowrules.conf
     │   ├── hyprlock/
     │   │   ├── hyprlock.conf
     │   │   ├── hypridle.conf
@@ -118,17 +118,13 @@ Hypr.dots/
     │   ├── hyprpaper/
     │   │   ├── hyprpaper.conf
     │   │   └── wallpaper.jpg
-    │   ├── lib/
-    │   │   └── init.lua
-    │   ├── services/
-    │   │   ├── init.lua
-    │   │   └── custom_config.lua
-    │   └── custom/                 ← your personal overrides (created on first install)
-    │       ├── env.lua
-    │       ├── execs.lua
-    │       ├── keybinds.lua
-    │       ├── rules.lua
-    │       └── variables.lua
+    │   └── custom/                 ← your personal overrides, sourced last
+    │       ├── env.conf
+    │       ├── execs.conf
+    │       ├── general.conf
+    │       ├── keybinds.conf
+    │       ├── rules.conf
+    │       └── variables.conf
     ├── wofi/
     │   ├── config
     │   ├── style.css
@@ -155,18 +151,19 @@ The installer creates stub files in `~/.config/hypr/custom/` on first run and **
 
 ```bash
 ~/.config/hypr/custom/
-├── env.lua          # extra environment variables
-├── execs.lua        # extra autostart commands
-├── keybinds.lua     # extra / override keybinds
-├── rules.lua        # extra window rules
-└── variables.lua    # override terminal, browser, etc.
+├── env.conf          # extra environment variables
+├── execs.conf        # extra autostart commands
+├── general.conf      # extra / override general settings
+├── keybinds.conf     # extra / override keybinds
+├── rules.conf        # extra window rules
+└── variables.conf    # override terminal, browser, etc.
 ```
 
 Example — change the default browser to Firefox:
 
-```lua
--- ~/.config/hypr/custom/variables.lua
-browser = "firefox"
+```ini
+# ~/.config/hypr/custom/variables.conf
+$browser = firefox
 ```
 
 ---
@@ -210,23 +207,13 @@ killall hyprpaper && hyprpaper &
 
 ## Monitors
 
-Edit `~/.config/hypr/hyprland/monitors.lua` to match your setup:
+Edit `~/.config/hypr/conf.d/monitors.conf` to match your setup:
 
-```lua
-hl.monitor({
-    output   = "eDP-1",
-    mode     = "1920x1080",
-    position = "auto",
-    scale    = "1",
-})
+```ini
+monitor = eDP-1, 1920x1080, auto, 1
 
--- Second monitor example
-hl.monitor({
-    output   = "HDMI-A-1",
-    mode     = "2560x1440",
-    position = "1920x0",
-    scale    = "1",
-})
+# Second monitor example
+monitor = HDMI-A-1, 2560x1440, 1920x0, 1
 ```
 
 ---
