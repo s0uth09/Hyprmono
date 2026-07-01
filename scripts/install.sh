@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# H Y P R M O N O - The Definitive Installer
-# Version: 4.0 (Final Rewrite)
-# Purpose: Robust, path-aware installation for the HyprMono environment.
 
 set -Eeuo pipefail
 

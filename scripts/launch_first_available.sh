@@ -4,10 +4,6 @@
 set -euo pipefail
 
 if (( $# == 0 )); then
-    # Hyprland can sometimes invoke a command variable without its quoted
-    # arguments if user config is edited incorrectly. Fall back to terminals so
-    # the launcher still does something useful instead of producing an empty
-    # error.
     set -- 'foot' 'kitty -1' 'alacritty' 'wezterm' 'konsole' 'kgx' 'uxterm' 'xterm'
 fi
 
