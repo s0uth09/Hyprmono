@@ -8,6 +8,7 @@ set -Eeuo pipefail
 # --- Absolute Path Resolution ---
 REAL_PATH=$(readlink -f "${BASH_SOURCE[0]}")
 SCRIPTS_DIR=$(dirname "$REAL_PATH")
+<<<<<<< HEAD
 STANDARD_REPO_DIR="$HOME/.local/share/hyprmono"
 
 resolve_repo_dir() {
@@ -30,6 +31,9 @@ resolve_repo_dir() {
 }
 
 REPO_DIR=$(resolve_repo_dir || true)
+=======
+REPO_DIR=$(cd "$SCRIPTS_DIR/.." && pwd)
+>>>>>>> 97fdd80dc8c22ddfef81c0be6df0d5570bf819e8
 
 # --- Colors ---
 RED="\e[38;5;203m"
@@ -44,6 +48,7 @@ RESET="\e[0m"
 log() { echo -e "${CYAN}hyde >${RESET} $*"; }
 err() { echo -e "${RED}hyde error >${RESET} $*" >&2; }
 
+<<<<<<< HEAD
 run_repo_script() {
     local script_name="$1"
     shift
@@ -58,6 +63,8 @@ run_repo_script() {
     fi
 }
 
+=======
+>>>>>>> 97fdd80dc8c22ddfef81c0be6df0d5570bf819e8
 show_help() {
     echo -e "${BOLD}${MAGENTA}H Y D E   S H E L L${RESET} - HyprMono Management"
     echo
@@ -76,6 +83,7 @@ show_help() {
 case "${1:-help}" in
     install)
         log "Initializing Installer..."
+<<<<<<< HEAD
         run_repo_script install.sh
         ;;
     reinstall)
@@ -94,6 +102,25 @@ case "${1:-help}" in
             git pull --ff-only origin "$branch"
             log "Syncing Configurations..."
             bash "$REPO_DIR/scripts/install.sh" --skip-pkgs --yes --no-migrate
+=======
+        bash "$SCRIPTS_DIR/install.sh"
+        ;;
+    reinstall)
+        log "Initializing Reinstaller..."
+        bash "$SCRIPTS_DIR/reinstall.sh"
+        ;;
+    uninstall)
+        log "Initializing Uninstaller..."
+        bash "$SCRIPTS_DIR/uninstall.sh"
+        ;;
+    update)
+        log "Syncing Repository..."
+        if [[ -d "$REPO_DIR/.git" ]]; then
+            cd "$REPO_DIR"
+            git pull origin master
+            log "Syncing Configurations..."
+            bash "$SCRIPTS_DIR/install.sh" --skip-pkgs
+>>>>>>> 97fdd80dc8c22ddfef81c0be6df0d5570bf819e8
         else
             err "Update failed: Not a git repository."
         fi

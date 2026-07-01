@@ -1,0 +1,128 @@
+#! /bin/env bash
+
+#? This Script stores all fzf menu related functions
+#? Call the functions by 'fzf-menu "functions"'
+#? Functions have 'fzf_' prefix and its functions to point to is the function name of the actual function
+# TODO: Make this Intuitive
+# TODO: Make the menu uniform
+
+#? Add common variables
+menu_height="--height 60%"
+
+fzf_make_List_OVERWRITE() {
+    fzf -m --marker ' ' \
+        --prompt '[TAB] MARK to "OVERWRITE" [Esc] Back | CTRL A : mark all  | CTRL D : unmark all: ' \
+        --bind 'ctrl-a:select-all,ctrl-d:deselect-all' \
+        --preview "Manage-Config show_restore_list ${ctl_override}"
+}
+
+fzf_make_List_SYNC() {
+    fzf -m --marker ' ' \
+        --prompt '[TAB] MARK to "SYNCHRONIZE" [Esc] Back | CTRL A : mark all  | CTRL D : unmark all: ' \
+        --bind 'ctrl-a:select-all,ctrl-d:deselect-all' \
+        --preview "Manage-Config show_restore_list ${ctl_override}"
+}
+
+fzf_make_List_PRESERVE() {
+    fzf -m --marker ' ' \
+        --prompt '[TAB] MARK to "PRESERVE" [Esc] Back | CTRL A : mark all  | CTRL D : unmark all: ' \
+        --bind 'ctrl-a:select-all,ctrl-d:deselect-all' \
+        --preview "Manage-Config show_restore_list ${ctl_override}"
+}
+
+fzf_make_List_BACKUP() {
+    fzf -m --marker ' ' \
+        --prompt '[TAB] MARK to "BACKUP" [Esc] Back | CTRL A : mark all  | CTRL D : unmark all: ' \
+        --bind 'ctrl-a:select-all,ctrl-d:deselect-all' \
+        --preview "Manage-Config show_restore_list ${ctl_override}"
+}
+
+#? restore Config
+fzf_menu_manage_config() {
+    fzf --prompt='Options: ' \
+        --disabled \
+        --pointer=' ' \
+        --marker=' ' \
+        --cycle \
+        --preview "Manage-Config show_restore_list ${ctl_override}" \
+        --preview-window 'right:80%,border-rounded'
+}
+
+#? backup revert
+fzf_revert() {
+    fzf --prompt 'List of explicit Backup, Run by Hyde backup all' \
+        --preview 'lsd -a --tree --depth 4 '"$BkpDir"'/$(echo {} | awk "{print \$4}")'
+}
+
+#? backup clean
+fzf_clean() {
+    fzf -m \
+        --marker=' ' \
+        --cycle \
+        --pointer=' ' \
+        --prompt '[TAB] Select [Esc] Exit | CTRL A : mark all | CTRL D : unmark all: ' \
+        --bind 'ctrl-a:select-all,ctrl-d:deselect-all'
+}
+
+#? restore BackUp
+fzf_BackUp() {
+    fzf \
+        --prompt='Restoring from a Backup Directory.' \
+        --preview 'lsd -a --tree --depth 4 '"$BkpDir"'/$(echo {} | awk "{print \$4}")' \
+        ${menu_height}
+
+}
+
+#? shell select
+fzf_shell_select() {
+    fzf --prompt='Select default shell: ' \
+        --marker=' ' \
+        --cycle \
+        --pointer=' ' \
+        --disabled \
+        --preview="Fzf-Preview ${CLI_PATH}/share/hyde-cli/shell_{}.jpg" \
+        --preview-window 'right:80%,border-rounded'
+}
+
+#? Theme patch Menu
+fzf_theme_menu() {
+    fzf \
+        --cycle \
+        --preview '[ {} = "[Confirm]" ] || Manage-Themes preview_theme {}' \
+        -m \
+        --marker ' ' \
+        --pointer=' ' \
+        --prompt '[TAB] Select a theme [Esc] Exit | CTRL A : mark all | CTRL D : unmark all: ' \
+        --bind 'ctrl-a:select-all,ctrl-d:deselect-all' \
+        --preview-window 'right:60%,border-rounded'
+
+}
+
+#? Wallpaper patch Menu
+fzf_select_theme_wallpaper() {
+    fzf \
+        --cycle \
+        --preview '[ {} = "[Confirm]" ] || Fzf-Preview {}' \
+        -m \
+        --marker ' ' \
+        --pointer=' ' \
+        --prompt '[TAB] Select Wallpaper [Esc] Exit | CTRL A : mark all | CTRL D : unmark all: ' \
+        --bind 'ctrl-a:select-all,ctrl-d:deselect-all' \
+        --preview-window 'right:60%,border-rounded'
+
+}
+
+#? sddm theme
+fzf_sddm_list_arcs() {
+
+    fzf --prompt='Select SDDM theme: ' \
+        --marker=' ' \
+        --cycle \
+        --pointer=' ' \
+        --disabled \
+        --preview="Fzf-Preview ${CLI_PATH}/share/hyde-cli/sddm_{}.jpg" \
+        --preview-window 'right:80%,border-rounded'
+}
+
+eval "$(declare -F | sed -e 's/-f /-fx /')"
+"fzf_${*}"

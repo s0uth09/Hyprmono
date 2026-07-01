@@ -1,0 +1,7 @@
+hl.on("hyprland.start", function()
+    hl.exec_cmd("nm-applet --indicator")
+    hl.exec_cmd("sleep 5; ~/.config/tsumiki/init.sh -start")
+    hl.exec_cmd("hyprpaper")
+    hl.exec_cmd("hypridle")
+    hl.exec_cmd("waybar -c ~/.config/hypr/waybar/config -s ~/.config/hypr/waybar/style.css")
+end)

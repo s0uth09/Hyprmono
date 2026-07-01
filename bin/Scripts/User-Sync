@@ -1,0 +1,139 @@
+#!/bin/env bash
+
+
+# Source the user's settings, overwriting any defaults
+ctlFile="$confDir/hyprdots-ctl/hyprdots.conf"
+runSync="fn_$1"
+if [[ ! -f $ctlFile ]]; then
+#touch $ctlFile
+cp "$etcDir/hyprdots.conf" "$(dirname "$ctlFile")"
+fi
+
+evaluate() {
+   section=${1}
+   eval=${2}
+   condition=${3}
+   while read -r line; do
+      # If the line starts with '#', skip it
+     if [[ $line == \#* ]] || [[ -z $line ]]; then continue ; fi
+ eval "$condition"
+ eval  $eval $line
+   done < <(grep -Pzo "(?s)\[$section\][^\[]*" "$ctlFile" | grep -Eva '^\['"$section"'\]|^$' | awk '/:#/ {exit} 1')
+}
+
+append() {
+   section=$1
+   targetFile=$2
+   while read -r line; do 
+shopt -s extglob
+pureLine=${line##+([[:space:]#])}
+
+if ! grep -Fq "$pureLine" "$targetFile";then
+echo "$line" >> "$targetFile"
+fi
+
+   done < <(grep -Pzo "(?s)\[$section\][^\[]*" "$ctlFile" | grep -Eva '^\['"$section"'\]|^$' | awk -v RS=':#' -v FS='\n' -v OFS='\n' 'NR % 2 == 0')
+}
+
+fn_hyprland() {
+  :
+}
+
+fn_theme_patch() {
+condition="
+if echo \"\$(awk -F '|' '{print \$2}' ${ThemeCtl})\" | grep -Fxq \"\$(echo \$line | cut -d' ' -f1 | tr -d '\"')\" ; then
+   print_prompt -y \"[EXIST]\"; echo \"\$(echo \$line | cut -d' ' -f1 | tr -d '\"')\"
+   continue
+fi
+"
+evaluate "theme-patch" "Hyprdots theme patch" "${condition}"
+}
+
+fn_waybar_ctl() {
+  section="waybar_ctl"
+  targetFile=$HOME/.config/waybar/config.ctl
+   sed -i '/^[[:space:]]*$/d' "$targetFile" && echo "" >> "$targetFile"
+   while read -r line; do 
+if ! grep -Fq "$line" "$targetFile";then
+echo  "0|$line" >> "$targetFile"
+fi
+  #  done < <(grep -Pzo "(?s)\[$section\][^\[]*" "$ctlFile" | grep -Eva '^\['"$section"'\]|^$')
+   done < <(grep -Pzo "(?s)\[$section\][^\[]*" "$ctlFile" | grep -Eva '^\['"$section"'\]|^$' | awk -v RS=':' -v FS='\n' -v OFS='\n' 'NR % 2 == 0')
+   sed -i '/^[[:space:]]*$/d' "$targetFile"
+}
+
+
+fn_Code() {  
+evaluate "Code"
+  file="$HOME/.config/Code/User/settings.json"
+  declare -A vars=(
+    ["workbench.colorTheme"]=${workbench_colorTheme:-"Catppuccin Mocha"}
+    ["window.menuBarVisibility"]=${window_menuBarVisibility:-"toggle"}
+    ["editor.fontSize"]=${editor_fontSize:-12}
+    ["editor.scrollbar.vertical"]=${editor_scrollbar_vertical:-"hidden"}
+    ["editor.scrollbar.verticalScrollbarSize"]=${editor_scrollbar_verticalScrollbarSize:-0}
+    ["security.workspace.trust.untrustedFiles"]=${security_workspace_trust_untrustedFiles:-"newWindow"}
+    ["security.workspace.trust.startupPrompt"]=${security_workspace_trust_startupPrompt:-"never"}
+    ["security.workspace.trust.enabled"]=${security_workspace_trust_enabled:-false}
+    ["editor.minimap.side"]=${editor_minimap_side:-"left"}
+    ["editor.fontFamily"]=${editor_fontFamily:-"'Maple Mono', 'monospace', monospace"}
+    ["extensions.autoUpdate"]=${extensions_autoUpdate:-false}
+    ["workbench.statusBar.visible"]=${workbench_statusBar_visible:-false}
+    ["terminal.external.linuxExec"]=${terminal_external_linuxExec:-"kitty"}
+    ["terminal.explorerKind"]=${terminal_explorerKind:-"both"}
+    ["terminal.sourceControlRepositoriesKind"]=${terminal_sourceControlRepositoriesKind:-"both"}
+    ["telemetry.telemetryLevel"]=${telemetry_telemetryLevel:-"off"}
+  )
+
+  for var in "${!vars[@]}"; do
+    # Use jq to update the settings file
+    jq --arg key "$var" --arg value "${vars[$var]}" '
+      if .[$key] | type == "string" then
+        .[$key] = $value
+      elif .[$key] | type == "number" then
+        .[$key] = ($value | tonumber)
+      elif .[$key] | type == "boolean" then
+        .[$key] = ($value | test("true"))
+      else
+        .
+      end' "$file" > temp.json && mv temp.json "$file"
+  done
+}
+
+fn_kdeglobals() { evaluate "kdeglobals"
+file="$HOME/.config/kdeglobals"
+declare -A vars=(
+    ["TerminalApplication"]=${TerminalApplication:-"kitty"}
+)
+  for var in "${!vars[@]}"; do
+    sed -i "s|^$var=.*|$var=${vars[$var]}|" "$file"
+  done
+}
+
+fn_kitty() { evaluate "kitty" 
+ file=~/.config/kitty/kitty.conf
+  declare -A vars=(
+    ["font_family"]="${font_family:-CaskaydiaCove Nerd Font Mono}"
+    ["bold_font"]="${bold_font:-auto}"
+    ["italic_font"]="${italic_font:-auto}"
+    ["bold_italic_font"]="${bold_italic_font:-auto}"
+    ["font_size"]="${font_size:-12}"
+    ["window_padding_width"]="${window_padding_width:-25}"
+    ["include"]="${include:-themes/theme.conf}"
+    ["confirm_os_window_close"]="${confirm_os_window_close:-0}"
+  )
+  for var in "${!vars[@]}"; do
+    sed -i "s|^$var .*|$var ${vars[$var]}|" "$file"
+  done
+
+append "kitty" "$file"
+
+}
+
+
+# fn_waybar_ctl
+# fn_Code
+# fn_kdeglobals
+# fn_kitty
+
+${runSync}

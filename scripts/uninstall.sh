@@ -7,9 +7,13 @@ set -Eeuo pipefail
 
 # --- Configuration ---
 CONFIG_DIR="$HOME/.config"
+<<<<<<< HEAD
 LOCAL_BIN="$HOME/.local/bin"
 TARGETS=(hypr kitty wofi rofi fuzzel waybar swaylock swaync dunst fastfetch fish vim wlogout fontconfig xdg-desktop-portal kde-material-you-colors)
 INSTALLED_SCRIPTS=(cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh install.sh launch_first_available.sh reinstall.sh uninstall.sh)
+=======
+TARGETS=(hypr kitty wofi rofi fuzzel waybar swaylock swaync dunst fastfetch fish vim wlogout fontconfig xdg-desktop-portal kde-material-you-colors)
+>>>>>>> 97fdd80dc8c22ddfef81c0be6df0d5570bf819e8
 BACKUP_PREFIX=".config-backup-"
 
 # --- Colors ---
@@ -21,6 +25,7 @@ BOLD="\e[1m"
 RESET="\e[0m"
 
 # --- Helpers ---
+<<<<<<< HEAD
 log() { printf '%b> %s%b\n' "${CYAN}" "$*" "${RESET}"; }
 ok() { printf '%b✓%b %s\n' "${GREEN}" "${RESET}" "$*"; }
 warn() { printf '%b!%b %s\n' "${YELLOW}" "${RESET}" "$*"; }
@@ -39,10 +44,25 @@ confirm() {
     printf '\n'
 
     [[ "$reply" =~ ^[Yy]$ ]] || exit 1
+=======
+log() { echo -e "${CYAN}>${RESET} $*"; }
+ok() { echo -e "${GREEN}✓${RESET} $*"; }
+warn() { echo -e "${YELLOW}!${RESET} $*"; }
+err() { echo -e "${RED}✗${RESET} $*"; }
+
+# --- Functions ---
+confirm() {
+    read -p "$(echo -e "${BOLD}${YELLOW}?${RESET} $1 [y/N] ")" -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+>>>>>>> 97fdd80dc8c22ddfef81c0be6df0d5570bf819e8
 }
 
 remove_configs() {
     log "Removing HyprMono configurations..."
+<<<<<<< HEAD
     for target in "${TARGETS[@]}"; do
         if [[ -d "$CONFIG_DIR/$target" ]]; then
             rm -rf -- "$CONFIG_DIR/$target"
@@ -57,12 +77,19 @@ remove_installed_scripts() {
         if [[ -e "$LOCAL_BIN/$script" || -L "$LOCAL_BIN/$script" ]]; then
             rm -f -- "$LOCAL_BIN/$script"
             ok "Removed $LOCAL_BIN/$script"
+=======
+    for t in "${TARGETS[@]}"; do
+        if [[ -d "$CONFIG_DIR/$t" ]]; then
+            rm -rf "$CONFIG_DIR/$t"
+            ok "Removed $CONFIG_DIR/$t"
+>>>>>>> 97fdd80dc8c22ddfef81c0be6df0d5570bf819e8
         fi
     done
 }
 
 restore_latest_backup() {
     log "Searching for latest backup..."
+<<<<<<< HEAD
 
     local latest_backup
     latest_backup=$(find "$HOME" -maxdepth 1 -type d -name "${BACKUP_PREFIX}*" -printf '%f\n' 2>/dev/null | sort -r | head -n 1 || true)
@@ -76,6 +103,19 @@ restore_latest_backup() {
             if [[ -d "$latest_backup/$target" ]]; then
                 cp -a "$latest_backup/$target" "$CONFIG_DIR/"
                 ok "Restored $target from backup"
+=======
+    # Find directories starting with the backup prefix, sorted by name (date) descending
+    local latest_backup=$(ls -d "$HOME"/${BACKUP_PREFIX}* 2>/dev/null | sort -r | head -n 1 || true)
+
+    if [[ -n "$latest_backup" ]]; then
+        warn "Found backup: $latest_backup"
+        confirm "Restore this backup?"
+        
+        for t in "${TARGETS[@]}"; do
+            if [[ -d "$latest_backup/$t" ]]; then
+                cp -r "$latest_backup/$t" "$CONFIG_DIR/"
+                ok "Restored $t from backup"
+>>>>>>> 97fdd80dc8c22ddfef81c0be6df0d5570bf819e8
             fi
         done
     else
@@ -83,6 +123,7 @@ restore_latest_backup() {
     fi
 }
 
+<<<<<<< HEAD
 main() {
     printf '%bHyprMono Uninstaller%b\n' "${BOLD}" "${RESET}"
     printf 'This will remove HyprMono configurations from your system.\n\n'
@@ -100,6 +141,21 @@ main() {
     restore_latest_backup
 
     printf '\n'
+=======
+# --- Main ---
+main() {
+    echo -e "${BOLD}HyprMono Uninstaller${RESET}"
+    echo "This will remove HyprMono configurations from your system."
+    echo
+    
+    confirm "Are you sure you want to proceed?"
+    
+    remove_configs
+    echo
+    restore_latest_backup
+    
+    echo
+>>>>>>> 97fdd80dc8c22ddfef81c0be6df0d5570bf819e8
     ok "Uninstallation complete."
     log "Note: System packages installed by HyprMono were not removed."
 }

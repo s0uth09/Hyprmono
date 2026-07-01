@@ -1,0 +1,319 @@
+#!/bin/env bash
+
+initiate_hyde_command() {
+
+    if [ -f "${META_FILE}" ] && { [ ! -f "${cacheDir}/landing/update.check" ] || [[ $(find "${cacheDir}/landing/update.check" -mmin +4320) ]]; }; then
+        navigate_clone
+        print_prompt -y "Checking for updates (This prompts every 3 Days or after you run Hyde update)"
+        NOTIFY "Checking for updates (This prompts every 3 Days or after you run Hyde update)"
+        if ping -q -c 1 -W 1 8.8.8.8 >/dev/null; then
+            git fetch #>/dev/null 2>&1
+            if [ "$(git rev-parse HEAD)" != "$(git rev-parse @{u})" ]; then
+                echo -e "Updates available! \nexec: \033[0;34mHyde update\033[0m"
+                NOTIFY "Updates available! exec: 'Hyde update' to pull the changes upstream"
+            fi
+        fi
+        touch "${cacheDir}/landing/update.check"
+    fi
+}
+
+Parametersv2() { #TODO: Add conditionals here like 'case'
+    export Function="${1}"
+    Function="${Function// /}"
+    if awk "/^$Function\(\) \{/,/}/" "$0" | grep >/dev/null 'case $'; then
+        # Define a variable for the tab characters
+        man_params=$(awk "/^$Function\(\) \{/,/;; esac/" "$0" | grep -E '^\s+\w+\)' | awk -v indent="\t\t\t\t\t\t" 'BEGIN { FS = "[()#?]" } { sub(/^[ \t]+/, "", $1); gsub(/\\n/, "\\n" indent, $4); printf "\t\t\t %-15s %s\n","[" $1 "]","﬌" $4 }')
+        echo -e "${man_params}"
+    fi
+}
+
+Parameters() { #TODO: Add conditionals here like 'case' ; This is not so optimized but it's fine!
+    . Hyde-Parser
+    export Function="${1}"
+    Function="${Function// /}"
+    prefix=$Function
+    if awk "/^$Function\(\) \{/,/}/" "$0" | grep -q 'case'; then
+        # Define a variable for the tab characters
+        man_params=$(
+            # awk "/^$Function\(\) \{/,/esac;/" "$0" | grep -E '^\s+\w+\)' | awk -v indent="\t\t\t\t\t\t" 'BEGIN { FS = "[()#?]" } { sub(/^[ \t]+/, "", $1); gsub(/\\n/, "\\n" indent, $4); printf "\t\t\t %-15s %s\n","[" $1 "]","﬌" $4 }')
+            awk "/^$Function\(\) \{/,/esac;/" "$0" | grep -E '^\s+\w+\)' | while read -r pline; do
+                # echo $pline
+                param=$(awk -F ')' '{print $1}' <<<${pline})
+                desc=$(awk -F '?' '{print $2}' <<<${pline})
+                indent="\t\t\t"
+                # echo echo -e ${line} | awk -F '?' '{print}'
+                printf "${indent}%-15s %s %s\n" "$(print_prompt -y " [" "${param}" -y "] ")" "$(print_prompt -c "﬌")" "$(print_prompt "$(echo -en "${desc}" | head -n 1)")"
+                # Print the remaining lines of $desc with indentation
+                echo -e "$desc" | tail +2 | while IFS= read -r line; do
+                    printf "  %s%-15s %s %s\n" "$indent" "" "" "$(print_prompt "$line")"
+                done
+                echo ""
+                if echo "${desc}" | grep -q "[*]"; then
+                    name_usage=${prefix^^}_${param^^}_USAGE
+                    while IFS= read -r uline; do
+                        local opt=$(awk -F '?' '{print $1}' <<<"${uline}")
+                        local desc=$(awk -F '?' '{print $2}' <<<"${uline}")
+                        opt=${opt// /}
+                        printf "\t\t\t\t\t\t%-15s %s %s\n" "$(print_prompt -y "[" "${opt}" -y "]")" "$(print_prompt -c "﬌")" "$(print_prompt "$desc")"
+                    done < <(parse_section "${name_usage}" "${0}")
+                    echo ""
+                fi
+
+            done
+        )
+        echo -e "${man_params}" |
+            sed -e "s|\${CloneDir}|$CloneDir|g" \
+                -e "s|\${HOME}|${HOME}|g" \
+                -e "s|\${hydeConfDir}|${hydeConfDir}|g" \
+                -e "s|\${ctlFile}|$ctlFile|g"
+    fi
+}
+
+SelectOption() { #! Can be improved soon using other package.:-  Used fzf.
+    echo ""
+    IFS=$'\n' read -d '' -ra options < <(echo "$1" | grep -v "^$")
+    select selected in "${options[@]}"; do
+        echo "You selected: $selected"
+        break
+    done
+    #echo "$selected"
+}
+
+ConfigCtl() {
+    FILE="$1"
+    EDITOR="${EDITOR:-xdg-open}" #* Use VS Code as the default editor
+    echo -e "[Editor]: $EDITOR (\"export EDITOR=pref_editor\") \n[Modifying]: $FILE \nPress Any Key if done editing"
+    #kitty -o allow_remote_control=yes -o listen_on=unix:/${HYDE_RUNTIME_DIR}/mykitty $(which $EDITOR) "$FILE" > /dev/null 2>&1 &
+    kitty "$(which $EDITOR)" "$FILE" >/dev/null 2>&1 &
+    LAST_MD5SUM=$(md5sum "$FILE")
+    while true; do
+        CURRENT_MD5SUM=$(md5sum "$FILE")
+        if [ "$CURRENT_MD5SUM" != "$LAST_MD5SUM" ]; then
+            eval "$ACTION"
+            LAST_MD5SUM="$CURRENT_MD5SUM"
+        fi
+        read -t 2 -n 1 >/dev/null && break #? loop every 2 seconds
+    done
+}
+
+# PreserveCloneDir() { #* Use: Not to mess up the current CloneDir If installing backup.
+#! Deprecated
+# if [ -f "$HOME"/.config/hypr/scripts/globalcontrol.sh ] ; then
+#     sed -i "/^CloneDir=/c\CloneDir=\"$CloneDir\"" "$HOME"/.config/hypr/scripts/globalcontrol.sh
+# fi
+# }
+
+check_file_change() {
+    file=$1
+    base=$(echo "$file" | tr '/' '-')
+    hash_file="${cacheDir}/${base}.hash"
+
+    # Calculate the current hash of the file
+    current_hash=$(md5sum "$file" | cut -d ' ' -f 1)
+
+    # If the hash file exists, read the stored hash. Otherwise, create it.
+    if [ -f "$hash_file" ]; then
+        stored_hash=$(cat "$hash_file")
+    else
+        echo "$current_hash" >"$hash_file"
+        stored_hash=$current_hash
+    fi
+
+    # Compare the current hash with the stored hash
+    if [ "$current_hash" != "$stored_hash" ]; then
+        # Update the hash file with the current hash
+        echo "$current_hash" >"$hash_file"
+        echo " Changes"
+        return 1 # Return a non-zero exit status
+    else
+        echo "Nope"
+        return 0 # Return a zero exit status
+    fi
+}
+
+inform_updates() {
+    latest_hyde_version="$(printf "%s" "$(git describe --tags --always --long | sed 's/\([^-]*-\)g/r\1/;s/-/./g')")"
+    if [[ $latest_hyde_version != $hyde_version ]]; then
+        cat <<WARN
+
+
+█░█ █▀█ █▀▄ ▄▀█ ▀█▀ █▀▀ █▀   ▄▀█ █░█ ▄▀█ █ █░░ ▄▀█ █▄▄ █░░ █▀▀
+█▄█ █▀▀ █▄▀ █▀█ ░█░ ██▄ ▄█   █▀█ ▀▄▀ █▀█ █ █▄▄ █▀█ █▄█ █▄▄ ██▄
+
+Latest Commit: $latest_hyde_version - $(git show -s --format='%B')
+
+WARN
+        echo "${git_hash}"
+        if [ -n "${git_hash}" ]; then
+            # Check if there are changes in the Configs directory since the commit identified by git_hash
+            git diff --quiet "${git_hash}" -- ./Configs && print_prompt -y "Exec: " "[ Hyde restore Config ]" -y " to apply 'Configs' changes from to local"
+            git diff --quiet "${git_hash}" -- ./ && print_prompt -y "Exec: " "[ Hyde upgrade ]" -y " to apply 'Full' upstream changes to local"
+
+            # print_prompt -r "Your local Hyde version is outdated!"
+            # print_prompt -y "Exec: 'Hyde upgrade' to apply upstream changes to local"
+        fi
+
+    fi
+}
+
+rofi_pos() {
+    pkill -x rofi && exit
+    export DEPENDENCIES+=(rofi jq)
+    source_user
+    roFile="${confDir}/rofi/clipboard.rasi"
+
+    #// set rofi scaling
+
+    [[ "${rofiScale}" =~ ^[0-9]+$ ]] || rofiScale=10
+    fnt_override="configuration {font: \"JetBrainsMono Nerd Font ${rofiScale}\";}"
+    wind_border=$((hypr_border * 3 / 2))
+    elem_border=$([ $hypr_border -eq 0 ] && echo "5" || echo $hypr_border)
+
+    #// evaluate spawn position
+
+    readarray -t curPos < <(hyprctl cursorpos -j | jq -r '.x,.y')
+    readarray -t monRes < <(hyprctl -j monitors | jq '.[] | select(.focused==true) | .width,.height,.scale,.x,.y')
+    readarray -t offRes < <(hyprctl -j monitors | jq -r '.[] | select(.focused==true).reserved | map(tostring) | join("\n")')
+    monRes[2]="$(echo "${monRes[2]}" | sed "s/\.//")"
+    monRes[0]="$((${monRes[0]} * 100 / ${monRes[2]}))"
+    monRes[1]="$((${monRes[1]} * 100 / ${monRes[2]}))"
+    curPos[0]="$((${curPos[0]} - ${monRes[3]}))"
+    curPos[1]="$((${curPos[1]} - ${monRes[4]}))"
+
+    if [ "${curPos[0]}" -ge "$((${monRes[0]} / 2))" ]; then
+        x_pos="east"
+        x_off="-$((${monRes[0]} - ${curPos[0]} - ${offRes[2]}))"
+    else
+        x_pos="west"
+        x_off="$((${curPos[0]} - ${offRes[0]}))"
+    fi
+
+    if [ "${curPos[1]}" -ge "$((${monRes[1]} / 2))" ]; then
+        y_pos="south"
+        y_off="-$((${monRes[1]} - ${curPos[1]} - ${offRes[3]}))"
+    else
+        y_pos="north"
+        y_off="$((${curPos[1]} - ${offRes[1]}))"
+    fi
+
+    r_override="window{location:${x_pos} ${y_pos};anchor:${x_pos} ${y_pos};x-offset:${x_off}px;y-offset:${y_off}px;border:${hypr_width}px;border-radius:${wind_border}px;} wallbox{border-radius:${elem_border}px;} element{border-radius:${elem_border}px;}"
+
+}
+
+#? handle pasting
+pasteIt() {
+    ignore_paste_file=${cacheDir}/landing/ignore.paste
+
+    if [[ ! -e "${ignore_paste_file}" ]]; then
+        cat <<IGNOREWTYPE >"${ignore_paste_file}"
+kitty
+org.kde.konsole
+terminator
+XTerm
+Alacritty
+xterm-256color
+IGNOREWTYPE
+    fi
+
+    ignore_class=$(echo "$@" | awk -F'--ignore=' '{print $2}')
+    [ -n "${ignore_class}" ] && echo "${ignore_class}" >>"${ignore_paste_file}" && print_prompt -y "[ignore]" "'$ignore_class'" && exit 0
+    class=$(hyprctl -j activewindow | jq -r '.initialClass')
+    if ! grep -q "${class}" "${ignore_paste_file}"; then
+        hyprctl dispatch exec 'wtype -M ctrl V -m ctrl'
+    fi
+}
+
+rename_backup() {
+    bak=$(ls -td -- "$BkpDir"/* | head -n 1)
+    if [[ "$last_bak" != $bak ]]; then
+        mv "$bak" "$bak-$1"
+    fi
+    print_prompt -y "Backup directory: " "$bak-$1"
+    [ -e "$install_packages_list" ] && cp -f "$install_packages_list" "$bak-$1/install_pkg.lst"
+}
+
+shell_select() {
+    #TODO for now the original script requires deletion of 1 of the shell to change shell therefore I should create a different approach
+    navigate_clone
+    myShell="$(echo -e "zsh\nfish" | Fzf-Menu "${FUNCNAME[0]}")"
+    print_prompt -y "[Shell] " "${myShell}"
+
+    if [ "${myShell}" == "zsh" ]; then
+        enable_package zsh oh-my-zsh-git zsh-theme-powerlevel10k
+        # add zsh plugins
+        # set variables
+        Zsh_rc="${ZDOTDIR:-${HOME}}/.zshrc"
+        Zsh_Path="/usr/share/oh-my-zsh"
+        Zsh_Plugins="$Zsh_Path/custom/plugins"
+        Fix_Completion=""
+
+        (
+            echo 'P|${HOME}|.zshrc|zsh oh-my-zsh-git zsh-theme-powerlevel10k pokemon-colorscripts-git'
+            echo 'P|${HOME}|.p10k.zsh|zsh oh-my-zsh-git zsh-theme-powerlevel10k pokemon-colorscripts-git'
+        ) >${ctl_override}
+
+        # generate plugins from list
+        while read r_plugin; do
+            z_plugin=$(echo $r_plugin | awk -F '/' '{print $NF}')
+            if [ "${r_plugin:0:4}" == "http" ] && [ ! -d $Zsh_Plugins/$z_plugin ]; then
+                SUPER git clone $r_plugin $Zsh_Plugins/$z_plugin
+            fi
+            if [ "$z_plugin" == "zsh-completions" ] && [ $(grep 'fpath+=.*plugins/zsh-completions/src' $Zsh_rc | wc -l) -eq 0 ]; then
+                Fix_Completion='\nfpath+=${ZSH_CUSTOM:-${ZSH:-/usr/share/oh-my-zsh}/custom}/plugins/zsh-completions/src'
+            else
+                w_plugin=$(echo ${w_plugin} ${z_plugin})
+            fi
+        done < <(cut -d '#' -f 1 "./restore_zsh.lst" | sed 's/ //g')
+
+        # update plugin array in zshrc
+        print_prompt -y "[SHELL]" " installing plugins (${w_plugin})"
+        sed -i "/^plugins=/c\plugins=($w_plugin)$Fix_Completion" $Zsh_rc
+
+    elif [ "${myShell}" == "fish" ]; then
+        enable_package fish lsd starship
+        (
+            echo 'P|${HOME}/.config|fish|fish'
+            echo 'P|${HOME}/.config|lsd|lsd'
+        ) >${ctl_override}
+
+        Restore-Config --only "${HYDE_RUNTIME_DIR}/"
+    fi
+    # set shell
+    [ -z ${myShell} ] && print_prompt -r "Operation Cancelled" && return 1
+    if [[ "$(grep "/${USER}:" /etc/passwd | awk -F '/' '{print $NF}')" != "${myShell}" ]]; then
+        print_prompt -y "[SHELL] " "changing shell to ${myShell}..."
+        chsh -s "$(which ${myShell})"
+    else
+        print_prompt -g "[SKIP] " "${myShell} is already set as shell..."
+    fi
+}
+
+main_help_content() {
+    grep -E '^\w+ *\( *\)\s*\{ #\?' "$0" | awk 'BEGIN { FS = "[()#?]" } { gsub(/\\n/, "\\n\t\t\t ﬌", $5); printf " %-20s %s\n", $1, $5 }' |
+        sed -e "s|\${CloneDir}|$CloneDir|g" \
+            -e "s|\${HOME}|${HOME}|g" \
+            -e "s|\${hydeConfDir}|${hydeConfDir}|g" \
+            -e "s|\${ctlFile}|$ctlFile|g"
+}
+
+resolve_deps() {
+    echo Dependencies: "${DEPENDENCIES[@]}"
+    enable_package "${DEPENDENCIES[@]}" && print_prompt -g "[ok] " "All dependencies are installed"
+}
+
+airplane-mode() {
+# Check if any wireless device is blocked
+wifi_blocked=$(rfkill list wifi | grep -o "Soft blocked: yes")
+
+if [ -n "$wifi_blocked" ]; then
+    rfkill unblock wifi
+    notify-send 'Airplane mode: OFF'
+else
+    rfkill block wifi
+    notify-send 'Airplane mode: ON'
+fi
+}
+
+
+
+eval "$(declare -F | sed -e 's/-f /-fx /')"

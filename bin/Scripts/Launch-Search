@@ -1,0 +1,257 @@
+#!/usr/bin/env bash
+
+# TODO Do some clean up
+#  insipired from https://github.com/stevenliebregt/rofi-scripts/blob/master/web-search.sh
+# Modified by khing to fit on Hyde usage
+
+set -e
+
+CACHE_DIR="$cacheDir/hyde-search"
+
+rofi_pos
+r_width="width: ${search_width:-40em};"
+r_height="height: ${search_height:-23em};"
+r_listview="listview { lines: ${search_line:-8}; columns: 4 ;}"
+r_override="window {$r_height $r_width border: ${hypr_width}px; border-radius: ${wind_border}px;} entry {border-radius: ${elem_border}px;} element {border-radius: ${elem_border}px;} ${r_listview} ${fnt_override} ${col_override} "
+
+declare -A SITES
+
+# Set default variable value to empty string.
+SITE_TO_USE=""
+
+search_file+=(
+	"${etcDir}/search.lst"
+)
+
+#Handle a custom search engine
+custom_search_sites() {
+	# Loop over each file in the search_file array
+	for file in "${search_file[@]}"; do
+		[[ ${file} != *.lst ]] && continue
+		[[ -f ${file} ]] || continue
+		# Read the file and add each line to the SITES array
+		while IFS='|' read -r key value || [[ -n "$key" ]]; do
+			# Trim leading and trailing whitespace from key and value
+			key=$(xargs <<<"${key}")     # xargs trims whitespace
+			value=$(xargs <<<"${value}") # xargs trims whitespace
+			# Check if key or value is blank, and continue with the next iteration if so
+			if [[ -z "$key" || -z "$value" ]]; then
+				continue
+			fi
+			SITES["$key"]="$value"
+		done <"$file"
+	done
+}
+
+# Creates the cache directory if it does not exist.
+create_cache_dir() {
+	if [ ! -d "$CACHE_DIR" ]; then
+		print_prompt +g "[created] " +y "${CACHE_DIR}"
+		mkdir -p "$CACHE_DIR"
+	fi
+}
+
+# Create the cache files if they do not exist.
+create_cache_files() {
+	for site in "${!SITES[@]}"; do
+		if [ ! -f "$CACHE_DIR/$site.txt" ]; then
+			print_prompt +g "[created] " +y "$CACHE_DIR/$site.txt"
+			touch "$CACHE_DIR/$site.txt"
+		fi
+	done
+}
+
+# Generate the list of sites.
+#
+# If a config file exists, use the sites from that list, otherwise populate
+# the list with the sites from the $SITES variable.
+gen_sites_list() {
+	{
+		[[ -f "${CACHE_DIR}/recent.sites" ]] && awk -F '|' '{gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1}' "${CACHE_DIR}/recent.sites"
+		for site in "${!SITES[@]}"; do
+			printf "%s\n" "$site"
+		done | sort
+	} | awk '!seen[$0]++'
+}
+
+# Generate the list of previously used search queries.
+gen_queries_list() {
+	site=$1
+	cat "$CACHE_DIR/$site.txt"
+}
+
+# Write a given line to a given file to the top of the file.
+#
+# It does this by creating a temporary file and then catting that output to the
+# file after echoing the new line.
+#
+# Expects 2 arguments:
+#  - The name of the file to write to, must be one of the options of sites in
+#    the SITES array.
+#  - The new line to input at the top of the new file.
+write_to_top() {
+	file=$1
+	content=$2
+
+	# # Move old values to temporary file.
+	# cat "$CACHE_DIR/$file.txt" >"$CACHE_DIR/tmp.txt"
+	# # Print query to top.
+	# echo "$content" >"$CACHE_DIR/$file.txt"
+	# cat "$CACHE_DIR/tmp.txt" >>"$CACHE_DIR/$file.txt"
+	# # Remove temporary file.
+	# rm "$CACHE_DIR/tmp.txt"
+
+	#? Prepend the selected emoji to the top of the recentData file
+	# sed -i "1i\\$selEmoji" "${recentData}"
+	awk -v var="$content" 'BEGIN{print var} {print}' "${file}" >temp && mv temp "${file}"
+	#?  Use awk to remove duplicates and empty lines, moving the most recent emoji to the top
+	awk 'NF' "${file}" | awk '!seen[$0]++' >temp && mv temp "${file}"
+
+}
+
+# Handle the query.
+handle_query() {
+	site=$1
+	query=$2
+	# Write the query to file.
+	# Check if the search query already exists.
+	if grep -Fxq "$query" "$CACHE_DIR/$site.txt"; then
+		# Remove the existing entry.
+		echo "$(cat "$CACHE_DIR/$site.txt" | grep -xv "$query")" >"$CACHE_DIR/$site.txt"
+		# Write the new entry on top.
+		write_to_top "${CACHE_DIR}/${site}.txt" "$query"
+	else
+		# Write the new entry on top.
+		write_to_top "${CACHE_DIR}/${site}.txt" "$query"
+	fi
+	[[ -f "${CACHE_DIR}/recent.sites" ]] || touch "${CACHE_DIR}/recent.sites"
+	write_to_top "${CACHE_DIR}/recent.sites" "${site} | ${SITES[${site}]}"
+
+	# Open the corresponding site in google-chrome-stable.
+	# google-chrome-stable "${SITES[$site]}$query"
+	[ -n "${BROWSER}" ] && "${BROWSER}" "${SITES[$site]}$query" && exit 0
+	xdg-open "${SITES[$site]}$query"
+}
+
+handle_input() {
+	inputTxt="${*}"
+	if [[ ${inputTxt} =~ ":" ]]; then
+		key="$(awk -F ':' '{print $1}' <<<$inputTxt)"
+		if [[ -n "${key}" ]]; then
+			query="$(awk -F':' '{for(i=2; i<=NF; ++i) print $i}' <<<$inputTxt)"
+			parseSite="$(grep -iE "^${key}" <<<"$(gen_sites_list)" | head -n 1)"
+			if [[ -n "${parseSite}" ]]; then
+				site="${parseSite}"
+			else
+				query="$(awk -F':' '{for(i=2; i<=NF; ++i) print $i}' <<<$inputTxt)"
+				[[ "${customRasi}" ]] || entryMsg="entry { placeholder:  \" Select a Search engine\" ;}"
+				site=$(rofi -dmenu -i -no-custom -select "${recentSite}" -theme-str "${r_override}" -theme-str "${entryMsg}" -config ${roFile} <<<"$(gen_sites_list)")
+			fi
+
+		else
+			query="$(awk -F':' '{for(i=2; i<=NF; ++i) print $i}' <<<$inputTxt)"
+			[[ "${customRasi}" ]] || entryMsg="entry { placeholder:  \" Select a Search engine\" ;}"
+			site=$(rofi -dmenu -i -no-custom -select "${recentSite}" -theme-str "${r_override}" -theme-str "${entryMsg}" -config ${roFile} <<<"$(gen_sites_list)")
+		fi
+	else
+		query="${inputTxt}"
+		[[ "${customRasi}" ]] || entryMsg="entry { placeholder:  \" Select a Search engine\" ;}"
+		site=$(rofi -dmenu -i -no-custom -select "${recentSite}" -theme-str "${r_override}" -theme-str "${entryMsg}" -config ${roFile} <<<"$(gen_sites_list)")
+	fi
+	[[ -z "${site}" ]] && exit 0
+	handle_query "$site" "$query"
+
+}
+
+main() {
+	create_cache_dir
+	create_cache_files
+
+	if [ "$@" ]; then
+		handle_query "google" "$@"
+	else
+		# Check if search engine set.
+		if [ "$SITE_TO_USE" ]; then
+			[[ "${customRasi}" ]] || entryMsg="entry { placeholder:  \"[$SITE_TO_USE]  Search\" ;}"
+			[[ -f "$CACHE_DIR/${SITE_TO_USE}.txt" ]] || { print_prompt +r "[error] " +y "url not set for ${SITE_TO_USE}" && usage; }
+			query=$(rofi -dmenu -i -p -theme-str "${r_override}" -theme-str "${entryMsg}" -config ${roFile} <<<"$(gen_queries_list $SITE_TO_USE)")
+			handle_query "$SITE_TO_USE" "$query"
+		else
+			[[ "${customRasi}" ]] || entryMsg="entry { placeholder:  \"   Search a keyword or select a  Search Engine \" ;}"
+			inputTxt=$(rofi -dmenu -i -select "${recentSite}" -theme-str "${r_override}" -theme-str "${entryMsg}" -config ${roFile} <<<"$(gen_sites_list)")
+			[[ -z "${inputTxt}" ]] && exit 0
+			if gen_sites_list | grep -q "${inputTxt}"; then
+				site="$(gen_sites_list | grep -m 1 ${inputTxt})"
+				[[ "${customRasi}" ]] || entryMsg="entry { placeholder:  \"[$site]  Search \" ;}"
+				query=$(rofi -dmenu -i -p -theme-str "${r_override}" -theme-str "${entryMsg}" -config ${roFile} <<<"$(gen_queries_list $site)")
+				handle_query "$site" "$query"
+			else
+				handle_input "${inputTxt}"
+			fi
+		fi
+	fi
+}
+
+# Show usage for the script.
+usage() {
+	cat <<EOF
+--reset 						Reset cache
+--browser | -b [browser]		Browser to use, defaults to xdg browser
+--site | -s [search engine]		Search-engine to use
+--rasi							Set custom .rasi file. NOte that this removes all overrides
+Available:
+$(
+		for site in "${!SITES[@]}"; do
+			echo -e "\t $site"
+		done | sort
+	)
+EOF
+
+	exit 1
+}
+
+#* Process user search_files
+custom_search_sites
+# Loop through all arguments
+while (($# > 0)); do
+	case $1 in
+	--site | -s)
+		if (($# > 1)); then
+			SITE_TO_USE="$2"
+			shift # Consume the value argument
+		else
+			print_prompt +r "[error] " +y "--site requires an argument."
+			usage
+		fi
+		;;
+	--browser | -b)
+		if (($# > 1)); then
+			BROWSER="$2"
+			shift # Consume the value argument
+		else
+			print_prompt +r "[error] " +y "--browser requires an argument."
+			usage
+		fi
+		;;
+	--reset)
+		rm -fr "${CACHE_DIR}"
+		print_prompt +g "[ok] " +y "reset"
+		exit 0
+		;;
+	--rasi)
+		[[ -z ${2} ]] && print_prompt +r "[error] " +y "--rasi requires an file.rasi config file" && exit 1
+		roFile=${2}
+		r_override=""
+		entryMsg=""
+		customRasi=true
+
+		shift
+		;;
+	*)
+		echo "Unknown option: $1"
+		usage
+		;;
+	esac
+	shift # Shift off the current option being processed
+done
+main "$@"
